@@ -1,11 +1,11 @@
-## How to create lnd node ready for accepting payments
+# How to create lnd node ready for accepting payments
 
-# Install lnd
+## Install lnd
 ```
 yay -S lnd
 ```
 
-# Configure
+## Configure
 ```
 mkdir ~/.lnd
 cat <<EOF
@@ -17,7 +17,7 @@ no-rest-tls=true
 EOF > ~/.lnd/lnd.conf
 ```
 
-# Create wallet
+## Create wallet
 ```
 lnd &
 lncli create
@@ -25,14 +25,14 @@ lncli create
 kill %1
 ```
 
-# Setup autounlock and start lnd
+## Setup autounlock and start lnd
 ```
 echo "<password-for-the-wallet>" > ~/.lnd/wallet.password
 echo "wallet-unlock-password-file=~/.lnd/wallet.password" >> ~/.lnd/lnd.conf
 lnd &
 ```
 
-# Obtain inbound liquidity
+## Obtain inbound liquidity
  - go to https://lnbig.com
  - initiate the payment
  - provide node id `lncli getinfo | jq -r .identity_pubkey`
