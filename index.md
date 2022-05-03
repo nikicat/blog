@@ -1,37 +1,40 @@
-## Welcome to GitHub Pages
+## How to create lnd node ready for accepting payments
 
-You can use the [editor on GitHub](https://github.com/nikicat/nikicat.github.io/edit/main/index.md) to maintain and preview the content for your website in Markdown files.
-
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
-
-### Markdown
-
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
-
-```markdown
-Syntax highlighted code block
-
-# Header 1
-## Header 2
-### Header 3
-
-- Bulleted
-- List
-
-1. Numbered
-2. List
-
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
+# Install lnd
+```
+yay -S lnd
 ```
 
-For more details see [Basic writing and formatting syntax](https://docs.github.com/en/github/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax).
+# Configure
+```
+mkdir ~/.lnd
+cat <<EOF
+bitcoin.active=true
+bitcoin.mainnet=true
+bitcoin.node=neutrino
+feeurl=https://nodes.lightning.computer/fees/v1/btc-fee-estimates.json
+no-rest-tls=true
+EOF > ~/.lnd/lnd.conf
+```
 
-### Jekyll Themes
+# Create wallet
+```
+lnd &
+lncli create
+# pass password here and save seed phrase afterwards
+kill %1
+```
 
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/nikicat/nikicat.github.io/settings/pages). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
+# Setup autounlock and start lnd
+```
+echo "<password-for-the-wallet>" > ~/.lnd/wallet.password
+echo "wallet-unlock-password-file=~/.lnd/wallet.password" >> ~/.lnd/lnd.conf
+lnd &
+```
 
-### Support or Contact
-
-Having trouble with Pages? Check out our [documentation](https://docs.github.com/categories/github-pages-basics/) or [contact support](https://support.github.com/contact) and we’ll help you sort it out.
+# Obtain inbound liquidity
+ - go to https://lnbig.com
+ - initiate the payment
+ - provide node id `lncli getinfo | jq -r .identity_pubkey`
+ - use NodeID@Host:Port to connect to the node `lncli connect <addr>`
+ - wait for on-chain confirmation
