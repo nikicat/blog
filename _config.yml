@@ -2,3 +2,5 @@ google_analytics: G-0QP3MYBZC0
 remote_theme: jekyll/minima
 plugins:
 - jekyll-remote-theme
+minima:
+  skin: dark
