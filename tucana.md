@@ -6,6 +6,7 @@
  1. enable USB debugging and connect adb
  1. reboot to fastboot `adb reboot bootloader`
  1. boot to TWRP `fastboot boot twrp.img`
+ 1. after booting twrp decrypt /sdcard using your pin/pattern
  1. connect to device using adb `adb shell`
  1. copy boot partition to sdcard `dd if=/dev/block/bootdevice/by-name/boot of=/sdcard/boot.img`
  1. reboot to system `adb reboot`
