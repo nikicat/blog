@@ -128,6 +128,8 @@ Self-hosted [Umami](https://umami.is): dashboard at <https://nikicat-umami.fly.d
 (fly.io apps `nikicat-umami` + `nikicat-umami-db`, region `arn`; fly config in
 `~/src/umami-fly/`, admin credentials in `~/.config/umami-fly-credentials`). The
 tracker tag is injected on every themed page via `extra_head` in `_data.yml`.
+A barely-visible "stats" link to the dashboard sits in the page footer
+(shadowed `_includes/layouts/base.vto`, styled via `extra_head`).
 The fly machine suspends when idle — the first visit after a quiet period wakes it
 (~1 s), so very short cold visits may go uncounted. dev.to and Medium copies have
 their own native stats; Umami only sees the origin.
