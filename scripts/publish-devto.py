@@ -72,12 +72,15 @@ def parse_post(slug):
             print(f"rasterized {png} — commit and push it BEFORE running this script again")
         return png
 
-    # dev.to needs absolute image URLs
+    # dev.to needs absolute image URLs. It serves all inline images through a
+    # width=800 proxy with no full-res click-through, so wrap every image in a
+    # link to the original on the origin (the SVG itself for rasterized ones).
     def img_ref(m):
         alt, path = m.group(1), m.group(2)
+        full = path
         if path.endswith(".svg"):
             path = png_sibling(path)
-        return f"{alt}({ORIGIN}{path})"
+        return f"[{alt}({ORIGIN}{path})]({ORIGIN}{full})"
 
     body = re.sub(r"(!\[[^\]]*\])\((/[^)\s]+)\)", img_ref, body)
 
