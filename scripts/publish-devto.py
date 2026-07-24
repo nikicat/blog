@@ -53,11 +53,12 @@ def parse_post(slug):
     # save time — swap in a PNG sibling whose name hashes the SVG content, so
     # any change produces a new URL and forces dev.to to re-ingest.
     ZOOM = "4"
+    RASTER_REV = "2"  # bump to force new URLs when dev.to has cached a bad fetch
 
     def png_sibling(path):
         import hashlib
         svg = open(BLOG + path, "rb").read()
-        digest = hashlib.sha256(svg + ZOOM.encode()).hexdigest()[:8]
+        digest = hashlib.sha256(svg + ZOOM.encode() + RASTER_REV.encode()).hexdigest()[:8]
         png = f"{path[:-4]}.{digest}.png"
         dst = BLOG + png
         if not os.path.exists(dst):
@@ -108,6 +109,18 @@ def main():
     if update_id:
         # never touch the published state of an existing article
         del article["published"]
+
+    # dev.to snapshots images at save time and negatively caches failed
+    # fetches — never let it see a URL that isn't live yet
+    dead = []
+    for url in re.findall(rf"!\[[^\]]*\]\(({ORIGIN}[^)\s]+)\)", article["body_markdown"]):
+        req = urllib.request.Request(url, method="HEAD", headers={"User-Agent": "zxczxc.dev publish script"})
+        try:
+            urllib.request.urlopen(req)
+        except urllib.error.HTTPError:
+            dead.append(url)
+    if dead:
+        sys.exit("not live yet (commit, push, wait for deploy, retry):\n  " + "\n  ".join(dead))
     payload = json.dumps({"article": article}).encode()
     url = "https://dev.to/api/articles" + (f"/{update_id}" if update_id else "")
     req = urllib.request.Request(
