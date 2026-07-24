@@ -1,5 +1,5 @@
 ---
-title: "The 30-hour Yak Shave: Reading One CPU Counter on Windows in 2026"
+title: "It wasn't thermal throttling"
 date: 2026-07-05
 author: Nikolay Bryskin
 description: "Overwatch framerates fell off a cliff in teamfights, and my i7-7700K swore it wasn't overheating. Proving what actually stalled it took a custom profiler, a forked kernel driver signed in CI — and the fix was a graphics slider."

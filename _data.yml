@@ -1,7 +1,7 @@
 lang: en
 
 home:
-  welcome: Hi, I'm Nikolay Bryskin. Notes on systems, Linux, and engineering.
+  welcome: Hi, I'm Nikolay Bryskin. I debug things until they confess, then write it down.
 
 menu_links: []
 extra_head:
