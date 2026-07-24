@@ -15,6 +15,7 @@ API key: ~/.config/devto/api_key or DEVTO_API_KEY env
 import json
 import os
 import re
+import subprocess
 import sys
 import urllib.error
 import urllib.request
@@ -47,8 +48,28 @@ def parse_post(slug):
 
     tags = re.findall(r"^  - (\S+)$", fm, re.M)
     body = body.replace("<!--more-->\n\n", "").replace("<!--more-->", "")
+
+    # dev.to's image proxy can't serve SVG — swap in a PNG sibling,
+    # generating it with rsvg-convert when missing or stale
+    def png_sibling(path):
+        png = path[:-4] + ".png"
+        src, dst = BLOG + path, BLOG + png
+        if not os.path.exists(dst) or os.path.getmtime(dst) < os.path.getmtime(src):
+            subprocess.run(
+                ["rsvg-convert", "--zoom", "2", "--background-color", "white", src, "-o", dst],
+                check=True,
+            )
+            print(f"rasterized {png} — commit and push it before the article goes live")
+        return png
+
     # dev.to needs absolute image URLs
-    body = re.sub(r"(!\[[^\]]*\])\(/", rf"\1({ORIGIN}/", body)
+    def img_ref(m):
+        alt, path = m.group(1), m.group(2)
+        if path.endswith(".svg"):
+            path = png_sibling(path)
+        return f"{alt}({ORIGIN}{path})"
+
+    body = re.sub(r"(!\[[^\]]*\])\((/[^)\s]+)\)", img_ref, body)
 
     article = {
         "title": field("title"),

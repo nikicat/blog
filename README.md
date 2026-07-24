@@ -42,7 +42,10 @@ everything else is a copy pointing back here.
      dev.to *draft* with canonical URL, tags, description, and the cover as
      `main_image`; review and publish in the dev.to dashboard
      (`--update <article-id>` to push changes later). Key in
-     `~/.config/devto-api-key` or `DEVTO_API_KEY`. Alternative: the RSS feed
+     `~/.config/devto/api_key` or `DEVTO_API_KEY`. SVG images are swapped for
+     auto-generated PNG siblings (dev.to's image proxy can't serve SVG;
+     requires `rsvg-convert`) — commit and push the generated PNGs before
+     publishing the draft. Alternative: the RSS feed
      (`https://zxczxc.dev/feed.xml`) can be registered in dev.to Settings →
      Extensions ("mark canonical" checked) — but RSS import drops covers and
      code-fence language tags.
