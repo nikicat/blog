@@ -1,0 +1,955 @@
+---
+title: "The Kilobyte UTXO Set: Utreexo, SwiftSync, and Bitcoin's state problem"
+date: 2026-07-16
+author: Nikolay Bryskin
+description: "Why Bitcoin wants UTXO accumulators, how Utreexo's Merkle forest works, what it costs, and who should run what — with an interactive playground."
+image: /uploads/kilobyte-utxo-set/cover-bfjad0ppv1wiq78l2c2p.png
+tags:
+  - bitcoin
+  - cryptography
+  - datastructures
+layout:
+readingInfo:
+  minutes: 16
+  words: 3400
+feedContent: |
+  <p>Every Bitcoin node drags a 12 GB database through its whole life just to answer one question: does this coin exist? This article — published as an interactive edition — shows how Utreexo compresses that answer into about thirty hashes. Add coins, watch equal-height trees carry-merge, and spend them with Merkle proofs, right in the page.</p>
+  <p><img src="https://nikicat.github.io/blog/uploads/kilobyte-utxo-set/playground.gif" alt="Playground recording: coins added, trees merging, a Merkle proof spend"></p>
+  <p><a href="https://nikicat.github.io/blog/posts/kilobyte-utxo-set/">Open the interactive edition</a></p>
+---
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Kilobyte UTXO Set — Utreexo &amp; Accumulators</title>
+<meta name="description" content="Why Bitcoin wants UTXO accumulators, how Utreexo's Merkle forest works, what it costs, and who should run it — with an interactive playground.">
+<meta property="og:title" content="The Kilobyte UTXO Set">
+<meta property="og:description" content="Why Bitcoin wants UTXO accumulators, how Utreexo's Merkle forest works, what it costs, and who should run it — with an interactive playground.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://nikicat.github.io/kilobyte-utxo-set/">
+<meta property="og:image" content="https://nikicat.github.io/kilobyte-utxo-set/assets/cover.png">
+<link rel="canonical" href="https://nikicat.github.io/kilobyte-utxo-set/">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌲</text></svg>">
+<script defer src="https://nikicat-umami.fly.dev/script.js" data-website-id="2f348616-00b4-43c7-958c-76fcbc78ea5b"></script>
+</head>
+<body>
+<style>
+  :root {
+    --ground: #f7f8f5;
+    --surface: #ffffff;
+    --ink: #1d2620;
+    --muted: #5b6a61;
+    --faint: #8a978e;
+    --line: #dce3dd;
+    --line-strong: #c3cec6;
+    --accent: #2f7d4f;
+    --accent-ink: #1e5c38;
+    --accent-soft: #e3efe7;
+    --proof: #b3541e;
+    --proof-soft: #f7e8dc;
+    --code-bg: #eef2ee;
+    --shadow: 0 1px 3px rgba(29,38,32,.08), 0 6px 20px rgba(29,38,32,.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #101512;
+      --surface: #181f1a;
+      --ink: #e4ebe5;
+      --muted: #9cab9f;
+      --faint: #6d7c70;
+      --line: #27312a;
+      --line-strong: #38453c;
+      --accent: #5cc389;
+      --accent-ink: #7fd6a4;
+      --accent-soft: #1d2f24;
+      --proof: #e0904e;
+      --proof-soft: #33241a;
+      --code-bg: #1e2721;
+      --shadow: 0 1px 3px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.25);
+    }
+  }
+  :root[data-theme="light"] {
+    --ground: #f7f8f5; --surface: #ffffff; --ink: #1d2620; --muted: #5b6a61;
+    --faint: #8a978e; --line: #dce3dd; --line-strong: #c3cec6;
+    --accent: #2f7d4f; --accent-ink: #1e5c38; --accent-soft: #e3efe7;
+    --proof: #b3541e; --proof-soft: #f7e8dc; --code-bg: #eef2ee;
+    --shadow: 0 1px 3px rgba(29,38,32,.08), 0 6px 20px rgba(29,38,32,.05);
+  }
+  :root[data-theme="dark"] {
+    --ground: #101512; --surface: #181f1a; --ink: #e4ebe5; --muted: #9cab9f;
+    --faint: #6d7c70; --line: #27312a; --line-strong: #38453c;
+    --accent: #5cc389; --accent-ink: #7fd6a4; --accent-soft: #1d2f24;
+    --proof: #e0904e; --proof-soft: #33241a; --code-bg: #1e2721;
+    --shadow: 0 1px 3px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.25);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.65;
+    font-size: 17px;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+  .serif, h1, h2, h3 {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+  code, .mono, .chip, .bit, .node-el, .stat-num {
+    font-family: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+  }
+  code {
+    background: var(--code-bg);
+    border-radius: 4px;
+    padding: .1em .35em;
+    font-size: .85em;
+  }
+
+  .col { max-width: 44rem; margin: 0 auto; padding: 0 1.25rem; }
+  .wide { max-width: 62rem; margin: 0 auto; padding: 0 1.25rem; }
+
+  header.hero { padding: 4.5rem 0 2.5rem; border-bottom: 1px solid var(--line); }
+  .eyebrow {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: .72rem; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 1rem;
+  }
+  h1 { font-size: clamp(2rem, 5.5vw, 3.1rem); line-height: 1.12; margin: 0 0 1.1rem; }
+  .lede { font-size: 1.16rem; color: var(--muted); max-width: 38rem; margin: 0; }
+  .lede strong { color: var(--ink); font-weight: 600; }
+
+  main { padding-bottom: 5rem; }
+  section { margin-top: 3.2rem; }
+  h2 { font-size: 1.65rem; margin: 0 0 .35rem; }
+  h3 { font-size: 1.15rem; margin: 1.6rem 0 .4rem; }
+  .kicker {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: .7rem; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--faint); margin: 0 0 .4rem;
+  }
+  p { margin: .85rem 0; }
+  a { color: var(--accent-ink); text-decoration-color: var(--line-strong); text-underline-offset: 3px; }
+  a:hover { text-decoration-color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+
+  /* stat tiles */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px;
+    background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin: 1.6rem 0; }
+  .stat { background: var(--surface); padding: 1rem 1.1rem; }
+  .stat-num { font-size: 1.55rem; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+  .stat-num small { font-size: .95rem; color: var(--muted); font-weight: 400; }
+  .stat-label { font-size: .78rem; color: var(--muted); margin-top: .15rem; line-height: 1.35; }
+  .stat.hot .stat-num { color: var(--accent-ink); }
+
+  /* details / collapsibles */
+  details {
+    border: 1px solid var(--line); border-radius: 8px; background: var(--surface);
+    margin: 1rem 0; overflow: hidden;
+  }
+  details summary {
+    cursor: pointer; padding: .7rem 1rem; list-style: none; display: flex; align-items: baseline; gap: .6rem;
+    font-size: .92rem; color: var(--muted); user-select: none;
+  }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::before {
+    content: "+"; font-family: ui-monospace, Menlo, monospace; color: var(--accent);
+    font-weight: 600; width: 1em; flex: none; transition: transform .2s;
+  }
+  details[open] summary::before { content: "–"; }
+  details summary .stitle { color: var(--ink); font-weight: 600; }
+  details summary:hover { background: var(--accent-soft); }
+  details .dbody { padding: .2rem 1.15rem 1rem 2.35rem; border-top: 1px dashed var(--line); font-size: .95rem; color: var(--ink); }
+  details .dbody p:first-child { margin-top: .8rem; }
+
+  /* compare diagram */
+  .vs { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.6rem 0; }
+  @media (max-width: 640px) { .vs { grid-template-columns: 1fr; } }
+  .vs-card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 1rem 1.1rem; }
+  .vs-card h4 { margin: 0 0 .6rem; font-size: .78rem; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); font-weight: 600; }
+  .flow { display: flex; flex-direction: column; gap: .45rem; font-size: .86rem; }
+  .fbox { border: 1px solid var(--line-strong); border-radius: 6px; padding: .4rem .6rem; background: var(--ground); }
+  .fbox.big { border-style: solid; border-width: 1px; position: relative; }
+  .fbox .sub { color: var(--muted); font-size: .78rem; }
+  .farrow { color: var(--faint); text-align: center; line-height: 1; font-size: .9rem; }
+  .fbox.accent { border-color: var(--accent); background: var(--accent-soft); }
+  .fbox.warn { border-color: var(--proof); background: var(--proof-soft); }
+
+  /* playground */
+  .playground {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    box-shadow: var(--shadow); margin: 1.8rem 0; overflow: hidden;
+  }
+  .pg-head { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; padding: .85rem 1rem; border-bottom: 1px solid var(--line); }
+  .pg-head .kicker { margin: 0; flex: 1 1 auto; }
+  .btn {
+    font: 600 .85rem/1 system-ui, sans-serif; padding: .55rem .9rem; border-radius: 7px;
+    border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); cursor: pointer;
+  }
+  .btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent-ink); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--ground); }
+  .btn.primary:hover:not(:disabled) { filter: brightness(1.06); }
+  .btn:disabled { opacity: .45; cursor: default; }
+  .btn.spend { border-color: var(--proof); color: var(--proof); }
+  .btn.spend:hover:not(:disabled) { background: var(--proof-soft); }
+
+  .pg-state { display: flex; flex-wrap: wrap; gap: .5rem 1.4rem; align-items: center; padding: .7rem 1rem; border-bottom: 1px solid var(--line); font-size: .85rem; }
+  .bits { display: inline-flex; gap: .25rem; align-items: baseline; }
+  .bit { border: 1px solid var(--line-strong); border-radius: 5px; padding: .1rem .45rem; color: var(--faint); font-size: .9rem; }
+  .bit.on { border-color: var(--accent); color: var(--accent-ink); background: var(--accent-soft); font-weight: 700; }
+  .bit-cap { display: block; font-size: .6rem; text-align: center; color: var(--faint); letter-spacing: .03em; }
+  .chips { display: inline-flex; flex-wrap: wrap; gap: .35rem; }
+  .chip { font-size: .78rem; border: 1.5px solid var(--accent); color: var(--accent-ink); border-radius: 999px; padding: .12rem .55rem; background: var(--accent-soft); }
+  .pg-canvas-wrap { overflow-x: auto; padding: .5rem 0; }
+  .pg-canvas { position: relative; margin: 0 auto; min-height: 120px; }
+  .pg-canvas svg { position: absolute; inset: 0; overflow: visible; }
+  .pg-canvas svg line { stroke: var(--line-strong); stroke-width: 1.5; }
+  .node-el {
+    position: absolute; transform: translate(-50%, -50%); display: flex; align-items: center; justify-content: center;
+    border: 1.5px solid var(--line-strong); background: var(--surface); color: var(--ink);
+    border-radius: 8px; font-size: .8rem; padding: .3rem .5rem; white-space: nowrap;
+    transition: left .45s cubic-bezier(.4,0,.2,1), top .45s cubic-bezier(.4,0,.2,1), opacity .35s, border-color .2s, background .2s;
+    opacity: 1;
+  }
+  .node-el.leaf { cursor: pointer; border-radius: 999px; min-width: 2.3rem; font-weight: 700; }
+  .node-el.leaf:hover { border-color: var(--accent); }
+  .node-el.internal { color: var(--muted); background: var(--ground); }
+  .node-el.root { border-color: var(--accent); border-width: 2px; box-shadow: 0 0 0 3px var(--accent-soft); }
+  .node-el.selected { border-color: var(--proof); background: var(--proof-soft); color: var(--proof); }
+  .node-el.proof { border-color: var(--proof); border-style: dashed; box-shadow: 0 0 0 3px var(--proof-soft); }
+  .node-el.path { opacity: .45; }
+  .node-el.ghost { opacity: 0; }
+  .pg-msg { padding: .75rem 1rem; border-top: 1px solid var(--line); font-size: .88rem; color: var(--muted); min-height: 2.6rem; }
+  .pg-msg b { color: var(--ink); }
+  .pg-msg .proof-word { color: var(--proof); font-weight: 600; }
+  .legend { display: flex; flex-wrap: wrap; gap: 1rem; padding: 0 1rem .8rem; font-size: .75rem; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: .35rem; }
+  .swatch { width: .85rem; height: .85rem; border-radius: 4px; border: 1.5px solid var(--line-strong); display: inline-block; }
+  .swatch.s-root { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  .swatch.s-sel { border-color: var(--proof); background: var(--proof-soft); }
+  .swatch.s-proof { border-color: var(--proof); border-style: dashed; }
+  @media (prefers-reduced-motion: reduce) { .node-el { transition: none; } }
+
+  /* tradeoffs */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: .9rem; margin: 1.4rem 0; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 1rem 1.1rem; }
+  .card h4 { margin: 0 0 .35rem; font-size: 1rem; font-family: inherit; }
+  .card p { margin: 0; font-size: .88rem; color: var(--muted); }
+  .card .dir { font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; margin-bottom: .5rem; display: inline-block; padding: .1rem .5rem; border-radius: 4px; }
+  .dir.cost { color: var(--proof); background: var(--proof-soft); }
+  .dir.win { color: var(--accent-ink); background: var(--accent-soft); }
+
+  /* table */
+  .tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); margin: 1.4rem 0; }
+  table { border-collapse: collapse; width: 100%; font-size: .86rem; min-width: 760px; }
+  th, td { text-align: left; padding: .6rem .8rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: .7rem; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); font-weight: 600; background: var(--ground); }
+  tr:last-child td { border-bottom: none; }
+  td:first-child { font-weight: 600; white-space: nowrap; }
+  .tag { font-size: .7rem; padding: .08rem .45rem; border-radius: 999px; border: 1px solid var(--line-strong); color: var(--muted); white-space: nowrap; }
+  .tag.live { border-color: var(--accent); color: var(--accent-ink); background: var(--accent-soft); }
+
+  .tbl-wrap.sm table { min-width: 520px; }
+  .hflow { display: flex; align-items: center; gap: .45rem; flex-wrap: wrap; font-size: .85rem; }
+  .blockchip { border: 1.5px solid var(--line-strong); border-radius: 6px; padding: .2rem .55rem; background: var(--ground); font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: .8rem; }
+  .harrow { color: var(--faint); }
+  .sum { border: 2px solid var(--accent); border-radius: 8px; padding: .25rem .7rem; font-weight: 700; color: var(--accent-ink); background: var(--accent-soft); font-family: ui-monospace, Menlo, monospace; }
+  .gap-s { height: .6rem; }
+  .verdict { display: flex; gap: .5rem; align-items: baseline; margin: .5rem 0; font-size: .88rem; }
+  .verdict .mark { font-weight: 700; flex: none; width: 1.2em; text-align: center; }
+  .verdict.good .mark { color: var(--accent-ink); }
+  .verdict.bad .mark { color: var(--proof); }
+
+  .reading li { margin: .45rem 0; }
+  .reading .note { color: var(--muted); font-size: .88rem; }
+  footer { border-top: 1px solid var(--line); margin-top: 4rem; padding: 1.5rem 0 3rem; color: var(--faint); font-size: .82rem; }
+</style>
+
+<header class="hero">
+  <div class="col">
+    <div class="eyebrow">bitcoin · validation · accumulators</div>
+    <h1>The kilobyte UTXO&nbsp;set</h1>
+    <p class="lede">Every Bitcoin node drags a <strong>12&nbsp;GB database</strong> through its whole life just to answer one question: <em>does this coin exist?</em> Cryptographic accumulators — Utreexo above all — compress that answer into <strong>about thirty hashes</strong>. Here's why that matters, how it works, and what it costs.</p>
+  </div>
+</header>
+
+<main>
+
+<section>
+  <div class="col">
+    <p class="kicker">01 · the problem</p>
+    <h2>Validation is cheap. State is not.</h2>
+    <p>To validate a transaction, a node must check each input against a record of every coin that exists and hasn't been spent — the <em>UTXO set</em> (unspent transaction outputs). Each check needs a handful of facts: the coin <b>exists</b>, its <b>amount</b>, its <b>spending condition</b> (script), plus its <b>creation height and coinbase flag</b> (for coinbase maturity and BIP&nbsp;68 relative timelocks). Then the spent coins are deleted and the new outputs inserted.</p>
+
+    <div class="stats">
+      <div class="stat"><div class="stat-num">~170<small>M</small></div><div class="stat-label">unspent coins tracked by every node</div></div>
+      <div class="stat"><div class="stat-num">~12<small>&nbsp;GB</small></div><div class="stat-label">UTXO database on disk (chainstate)</div></div>
+      <div class="stat"><div class="stat-num">~3<small>B</small></div><div class="stat-label">random lookups during one full sync</div></div>
+      <div class="stat hot"><div class="stat-num">~0.9<small>&nbsp;kB</small></div><div class="stat-label">the same state, as a Utreexo accumulator</div></div>
+    </div>
+
+    <p>Signatures can be skipped below a reviewable checkpoint (<code>assumevalid</code>), bandwidth can be bought, but the UTXO set is different: it's <b>random-access state touched by every single input</b>. If it fits in RAM, lookups are ~100&nbsp;ns; if it doesn't, they become disk seeks and a full sync degrades from hours to days. State is the term that decides whether a Raspberry&nbsp;Pi and a workstation live in the same universe.</p>
+
+    <details>
+      <summary><span class="stitle">How Bitcoin Core actually stores it</span> — LevelDB, dbcache, and the flush spiral</summary>
+      <div class="dbody">
+        <p>Core keeps the UTXO set in a LevelDB database (<code>chainstate/</code>, ~48 bytes per coin plus index overhead) fronted by an in-memory cache (<code>-dbcache</code>, default 450&nbsp;MiB). While the working set fits in the cache, coin lookups and updates are memory-speed. When the cache fills during sync, Core writes it out and <em>empties it</em> — so the next few million lookups all miss and go to disk.</p>
+        <p>With ~170M coins needing north of 10&nbsp;GB of cache, a default-sized cache overflows constantly. Every miss is a random read; every flush rewrites overlapping LevelDB files (compaction). On a machine with 2–4&nbsp;GB of RAM this — not hashing, not signatures — is where initial sync goes to die. The standard advice "raise your dbcache" is a workaround for exactly the cost accumulators remove.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary><span class="stitle">Why snapshots don't solve this</span> — assumeutxo still ships the state</summary>
+      <div class="dbody">
+        <p><code>assumeutxo</code> lets a node start from a UTXO snapshot and validate history in the background — a big usability win. But the snapshot <em>is</em> the 12&nbsp;GB state: you still have to download it, hash it, store it, and random-access it forever after. It moves the state problem around the timeline; it doesn't shrink the state. An accumulator shrinks the thing itself, which is why the two compose nicely: an accumulator checkpoint is a kilobyte you can read in a code review.</p>
+      </div>
+    </details>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <p class="kicker">02 · the idea</p>
+    <h2>Flip who carries the data</h2>
+    <p>An <em>accumulator</em> is a compact commitment to a set. It supports four operations: <b>add</b> an element, <b>delete</b> one, <b>prove</b> membership, and <b>verify</b> a proof. The trick is a change of responsibility: the verifier keeps only the tiny commitment, and whoever wants to <em>spend</em> a coin must present a proof that it's in the set.</p>
+
+    <div class="vs">
+      <div class="vs-card">
+        <h4>Today — node carries the set</h4>
+        <div class="flow">
+          <div class="fbox">transaction input <span class="sub">“spend coin X”</span></div>
+          <div class="farrow">↓</div>
+          <div class="fbox warn">look up X in a <b>12 GB</b> database <span class="sub">random read, per input, forever</span></div>
+          <div class="farrow">↓</div>
+          <div class="fbox">exists? get amount + script → validate</div>
+        </div>
+      </div>
+      <div class="vs-card">
+        <h4>Accumulator — spender carries a proof</h4>
+        <div class="flow">
+          <div class="fbox">input <b>+ ~1 kB proof</b> <span class="sub">“X is in the set, here's the path”</span></div>
+          <div class="farrow">↓</div>
+          <div class="fbox accent">check proof against <b>~28 hashes</b> <span class="sub">pure hashing, no database</span></div>
+          <div class="farrow">↓</div>
+          <div class="fbox">amount + script are <em>inside</em> the proven leaf → validate</div>
+        </div>
+      </div>
+    </div>
+
+    <p>The database becomes a receipt check. Nothing about Bitcoin's consensus rules changes — only <em>how a node represents what it already verifies</em>.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wide">
+    <div class="col" style="padding:0; max-width:44rem; margin:0 auto;">
+      <p class="kicker">03 · the mechanism</p>
+      <h2>Utreexo: a forest that counts in binary</h2>
+      <p>Utreexo (Dryja, 2019) arranges the UTXO set as a <b>forest of perfect Merkle trees</b> — every leaf is the hash of one coin (its outpoint, amount, script, creation height, and coinbase flag). The forest's shape is forced by one rule: <em>tree sizes are the binary digits of the coin count</em>. 6 coins = <code>110₂</code> = one 4-tree and one 2-tree. The node stores only the tree <b>roots</b> and the count. That's the entire database.</p>
+      <p>Try it — add coins and watch trees merge like carry bits; click a coin, see its proof, spend it:</p>
+    </div>
+
+    <div class="playground">
+      <div class="pg-head">
+        <p class="kicker">accumulator playground</p>
+        <button class="btn primary" id="btn-add">Add coin</button>
+        <button class="btn spend" id="btn-spend" disabled>Spend selected</button>
+        <button class="btn" id="btn-reset">Reset</button>
+      </div>
+      <div class="pg-state">
+        <span class="bits" id="bits"></span>
+        <span><span style="color:var(--faint)">node state = count + roots:</span>&nbsp; <span class="chips" id="roots"></span></span>
+      </div>
+      <div class="pg-canvas-wrap"><div class="pg-canvas" id="canvas"><svg id="edges"></svg></div></div>
+      <div class="legend">
+        <span><span class="swatch s-root"></span> root (stored by the node)</span>
+        <span><span class="swatch"></span> derived node (not stored)</span>
+        <span><span class="swatch s-sel"></span> selected coin</span>
+        <span><span class="swatch s-proof"></span> its proof (supplied by the spender)</span>
+      </div>
+      <div class="pg-msg" id="msg"><b>Click any coin</b> to see the Merkle proof a spender would have to provide.</div>
+    </div>
+
+    <div class="col" style="padding:0; max-width:44rem; margin:0 auto;">
+      <p>Three things to notice while playing:</p>
+      <p><b>Adding is a carry.</b> A new coin starts as a lone 1-tree. If a 1-tree already exists, the two combine under a new parent; if that collides with a 2-tree, they combine again — exactly like incrementing a binary counter. Adds need <em>no data at all</em> beyond the roots.</p>
+      <p><b>A proof is a path.</b> To spend a coin, you present the coin plus its sibling hashes up to a root — about <code>log₂(n)</code> hashes, ~28 for the real UTXO set. The amount and script are inside the leaf hash, so a proof can't lie about them: the hashes wouldn't land on the node's stored root.</p>
+      <p><b>The proof is also the update.</b> This is Utreexo's quiet elegance: when a coin is deleted, the new roots of the leftover pieces are <em>literally the hashes from the proof you just verified</em>. Verification and the state update consume the same bytes — the node never needs data it doesn't already hold in its hand.</p>
+
+      <details>
+        <summary><span class="stitle">The delete, step by step</span> — worked example with 4 coins</summary>
+        <div class="dbody">
+          <p>Say the forest holds one 4-tree over coins <code>a b c d</code>: root <code>R = H(H(a,b), H(c,d))</code>. A transaction spends <code>c</code>, attaching the proof <code>{d, H(a,b)}</code>.</p>
+          <p><b>Verify:</b> the node computes <code>H(c,d)</code> from the claimed coin and its sibling, then <code>H(H(a,b), H(c,d))</code>, and checks the result equals its stored root <code>R</code>. It does — the coin exists, and its amount/script (inside <code>c</code>'s leaf hash) are authentic.</p>
+          <p><b>Delete:</b> remove the 4-tree's root from state. Three coins remain, and 3 = <code>11₂</code>, so the forest must become a 2-tree plus a 1-tree. Their roots are <code>H(a,b)</code> and <code>d</code> — <em>both are items from the proof</em>. No lookup, no recomputation from leaves the node doesn't have.</p>
+          <p>In general, deleting a leaf makes its sibling "move up" one level, and the proof always contains exactly the hashes needed to rebuild every affected root.</p>
+          <p><em>A footnote for the precise:</em> this tree-splitting is how the 2019 paper presents deletion. The implementations that shipped (utreexod, Floresta's rustreexo) use a newer <em>swapless</em> scheme — the leaf counter never decreases, the deleted slot simply goes empty, and <code>d</code> moves up into its parent's position, so the example would end as the single root <code>H(H(a,b), d)</code> rather than two roots. The property that matters is identical in both designs: the verified proof contains exactly the bytes needed to write the new roots.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="stitle">What the playground simplifies</span> — positions, batching, and real deletes</summary>
+        <div class="dbody">
+          <p>Production Utreexo tracks every node's <em>position</em> in the forest and deletes in batches (all of a block's spends at once) — necessary so that proofs from different peers refer to the same structure, and so multiple deletes in one tree don't trample each other. The 2019 paper keeps the forest canonical with swap operations; the shipped implementations (utreexod, Floresta's rustreexo) instead use a <em>swapless</em> scheme where deleted slots go empty and siblings move up in place. The playground deletes in place and then re-merges equal-sized trees one narrated step at a time, which keeps the binary-counter picture exact but arranges trees by history rather than canonically. The root arithmetic you see — proof hashes becoming new roots — is faithful.</p>
+          <p>Real leaf hashes also commit to the block height and coinbase flag, and the forest is hashed with tagged SHA-512/256. See the <a href="https://eprint.iacr.org/2019/611.pdf">paper</a> for the batched transformation.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="stitle">What does the node trust?</span> — nothing but its own hashes</summary>
+        <div class="dbody">
+          <p>Where do the roots come from? <b>The node computes them itself, from genesis</b> — it starts with an empty forest and applies every add and delete with its own hands as it validates each block. The accumulator state at any height is a pure function of the chain, exactly like today's UTXO set, only smaller. Nobody hands you roots.</p>
+          <p>Given that, proofs are self-authenticating: a proof either hashes up to <em>your own</em> stored roots or it doesn't, and forging one — wrong amount, wrong script, a coin that never existed — requires a SHA-2 collision (implementations hash with SHA-512/256). Whoever supplies proofs (a peer, a bridge) is exactly as untrusted as a peer supplying blocks today: garbage fails validation and the block is rejected.</p>
+          <p>Bridges are therefore a <b>liveness</b> dependency, never a safety one — with no proof you can't validate a spend, so you can be starved, but you cannot be fooled. The one optional trust-flavored piece is a hardcoded checkpoint (starting from baked-in roots instead of genesis), and that sits in the same trust class as <code>assumevalid</code>: a reviewable constant in the source, auditable by anyone who syncs without it.</p>
+        </div>
+      </details>
+
+      <details>
+        <summary><span class="stitle">Where do proofs come from?</span> — bridge nodes and stale proofs</summary>
+        <div class="dbody">
+          <p>Somebody has to generate proofs for spenders, and today's wallets don't track them. <b>Bridge nodes</b> fill the gap: they maintain the <em>entire</em> forest (every internal hash — larger than a plain UTXO database) and attach proofs to transactions and blocks on behalf of the legacy ecosystem.</p>
+          <p>There's a subtler cost: <b>proofs go stale</b>. Every block adds and deletes leaves, which restructures the forest, so a proof valid at height <i>H</i> may be wrong at <i>H+1</i>. Wallets that hold their own proofs must refresh them as blocks arrive (cheap per block, but a standing obligation), or lean on a bridge to prove on demand. This dynamic-proof property is the main engineering difference from textbook Merkle trees, and the main reason adoption needs infrastructure, not just code.</p>
+        </div>
+      </details>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <p class="kicker">04 · the price</p>
+    <h2>What Utreexo trades away</h2>
+    <p>Accumulators don't create efficiency from nothing — they move costs to where they're cheaper to pay. The honest ledger:</p>
+
+    <div class="cards">
+      <div class="card"><span class="dir win">deleted</span><h4>State &amp; random I/O</h4><p>Node state: 12 GB → ~1 kB. No database, no cache tuning, no flush stalls. Validation speed becomes independent of RAM — a Pi validates like a workstation.</p></div>
+      <div class="card"><span class="dir cost">added</span><h4>Bandwidth</h4><p>Blocks travel with proofs: about ×1.7 the bytes as utreexod ships today (worst case ×4 for per-transaction relay). Caching cuts most of it — most coins are spent soon after creation, proofs for cached coins are omitted, and the paper's simulation with a 500&nbsp;MB leaf cache lands near ×1.25.</p></div>
+      <div class="card"><span class="dir cost">added</span><h4>Prover burden</h4><p>Spenders (or bridge nodes on their behalf) must generate and refresh proofs. Bridges store <em>more</em> than a normal node — the asymmetry is the point, but someone must run them.</p></div>
+      <div class="card"><span class="dir cost">added</span><h4>CPU, slightly</h4><p>~log n hashes per input is <em>more</em> raw compute than a RAM hash-map hit. On a big-RAM machine Utreexo doesn't win time — it wins footprint. The speedup is real only where state was the bottleneck.</p></div>
+    </div>
+
+    <details>
+      <summary><span class="stitle">Why the bandwidth hit is smaller than it looks</span> — coins die young</summary>
+      <div class="dbody">
+        <p>Empirically, a large share of outputs are spent within hours or days of creation (change outputs, exchange churn, batching flows). Utreexo exploits this: nodes keep recently added leaves cached, and peers skip sending proofs for anything the receiver is known to cache. Since most spends hit young coins, most proofs shrink to nearly nothing. The published numbers span exactly this effect: proofs roughly double a block uncached, utreexod ships at about ×1.7, and the paper's simulated 500&nbsp;MB leaf cache brings the whole download down to about ×1.25. The long-tail — old coins waking up — pays full ~28-hash fare.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary><span class="stitle">What it means for initial sync</span> — which bottleneck it removes, in numbers</summary>
+      <div class="dbody">
+        <p>A full sync is bounded below by <code>max(network, disk, cpu)</code>. On mid-2026 mainnet (~753 GB of blocks, ~3B inputs): a 1 Gbps line needs ~1h40m for the download no matter what; hashing and parsing cost tens of minutes of CPU; signatures below <code>assumevalid</code> are skipped. On big-RAM hardware the UTXO term is small — so Utreexo barely moves the bound there, and the extra proof bytes actually <em>raise</em> the network term.</p>
+        <p>The transformation is on <em>constrained</em> hardware: with 2 GB of RAM, a stock node's UTXO term explodes into billions of disk seeks (days), while a Utreexo node's stays exactly where the big-RAM one is. Accumulators don't lower the floor — they make the floor reachable on hardware that used to sit 10× above it.</p>
+      </div>
+    </details>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <p class="kicker">05 · the inversion</p>
+    <h2>SwiftSync: never build the database at all</h2>
+    <p>Utreexo shrinks the UTXO set by making spenders carry proofs. <a href="https://gist.github.com/RubenSomsen/a61a37d14182ccd78760e477c78133cd">SwiftSync</a> (Somsen, 2025) goes further for the special case of syncing: it needs <b>no proofs, no forest, no lookups</b>. You download a <em>hint file</em> — literally one bit per output ever created, saying whether that output will still be unspent when you reach the tip (~100&nbsp;MB compressed for all of Bitcoin's history). Then validation becomes bookkeeping:</p>
+
+    <div class="vs">
+      <div class="vs-card">
+        <h4>One pass — every output is sorted by its hint bit</h4>
+        <div class="flow">
+          <div class="fbox">output created · hint&nbsp;=&nbsp;<b>1</b> <span class="sub">“survives to the tip”</span></div>
+          <div class="farrow">↓</div>
+          <div class="fbox accent">append to the final UTXO set <span class="sub">write-once — never read during sync</span></div>
+        </div>
+        <div class="gap-s"></div>
+        <div class="flow">
+          <div class="fbox">output created · hint&nbsp;=&nbsp;<b>0</b> <span class="sub">“will be spent before the tip”</span></div>
+          <div class="farrow">↓</div>
+          <div class="fbox warn">aggregate <b>+=</b> H(outpoint) <span class="sub">never stored anywhere</span></div>
+        </div>
+        <div class="gap-s"></div>
+        <div class="flow">
+          <div class="fbox">input spends a coin</div>
+          <div class="farrow">↓</div>
+          <div class="fbox warn">aggregate <b>−=</b> H(outpoint) <span class="sub">no existence check — just subtract</span></div>
+        </div>
+      </div>
+      <div class="vs-card">
+        <h4>End of sync — a single equality</h4>
+        <div class="verdict good"><span class="mark">= 0</span><span>every spend matched exactly one creation, and every doomed output was spent exactly once. The set is consistent — proven without ever asking “does this coin exist?”</span></div>
+        <div class="verdict bad"><span class="mark">≠ 0</span><span>a hint was wrong, or a block spent a coin that never existed. Sync <b>aborts</b>. Bad hints can waste your time; they can never make you accept an invalid state — the scheme fails closed.</span></div>
+        <p style="font-size:.85rem; color:var(--muted); margin:.8rem 0 0;">That fail-closed property is why the hint file needs no trust in the safety sense: anyone can publish hints, and lying is self-defeating.</p>
+      </div>
+    </div>
+
+    <p>The second consequence is the deeper one. Adding and subtracting from an aggregate <b>commutes</b> — order doesn't matter. So blocks no longer have to be validated one after another:</p>
+
+    <div class="vs">
+      <div class="vs-card">
+        <h4>Today — inherently serial</h4>
+        <div class="hflow"><span class="blockchip">b₁</span><span class="harrow">→</span><span class="blockchip">b₂</span><span class="harrow">→</span><span class="blockchip">b₃</span><span class="harrow">→</span><span class="blockchip">b₄</span></div>
+        <p style="font-size:.82rem; color:var(--muted); margin:.7rem 0 0;">Each block reads and mutates the UTXO state left by the previous one. One thread connects blocks, no matter how many cores you own.</p>
+      </div>
+      <div class="vs-card">
+        <h4>SwiftSync — commutative</h4>
+        <div class="hflow">
+          <span class="blockchip">b₃</span><span class="blockchip">b₁</span><span class="blockchip">b₄</span><span class="blockchip">b₂</span>
+          <span class="harrow">⇒</span><span class="sum">Σ ± H(…)</span>
+        </div>
+        <p style="font-size:.82rem; color:var(--muted); margin:.7rem 0 0;">Any order, every core at once. This attacks the serial bottleneck of sync — the one cost no amount of bandwidth or disk can buy back.</p>
+      </div>
+    </div>
+
+    <p>The trade: spent coins are never materialized, so their scripts can't be individually checked (nor coinbase maturity, which needs the same per-coin metadata) — SwiftSync inherits the same <code>assumevalid</code> stance a default node already takes for old signatures. It's a sync-time trick only: when it finishes you're a stock node with a stock database. A proof-of-concept measured a <a href="https://delvingbitcoin.org/t/swiftsync-speeding-up-ibd-with-pre-generated-hints-poc/1562">5.28× sync speedup</a> before parallel validation is even exploited.</p>
+
+    <details>
+      <summary><span class="stitle">Why a sum can prove set-consistency</span> — the accountant's argument</summary>
+      <div class="dbody">
+        <p>Think of the aggregate as a ledger that must balance. Every hint-0 output deposits <code>H(outpoint)</code> exactly once when it's created; every input withdraws <code>H(outpoint)</code> exactly once when it spends. If history is honest, deposits and withdrawals pair off perfectly and the balance is zero.</p>
+        <p>Now try to cheat. Spend a coin that never existed: a withdrawal with no matching deposit — non-zero. Spend the same coin twice: two withdrawals, one deposit — non-zero. Mark a doomed output as “unspent” in the hints: its deposit never happens but its withdrawal does — non-zero. Mark a surviving output as “doomed”: a deposit nobody withdraws — non-zero. The hash makes collisions infeasible, so entries can't be forged to cancel accidentally. One equality at the end certifies billions of set operations that were never performed individually.</p>
+        <p>Fuller designs fold amounts into the aggregated data to tighten the money-supply check; the <a href="https://gist.github.com/RubenSomsen/a61a37d14182ccd78760e477c78133cd">gist</a> walks the exact accounting.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary><span class="stitle">Should you trust the hint file?</span> — no, and the node doesn't</summary>
+      <div class="dbody">
+        <p>The hints are not an authority — they're <b>foreknowledge</b>: claims about the future ("this output will die before the tip") that let the node skip building a searchable database. Foreknowledge is checkable after the fact, and <em>every bit is checked</em> — just not at the moment it's read. All the checks are batched into the single zero-equality at the end; the four ways a hint or a block could lie each leave the sum non-zero (see the drawer above).</p>
+        <p>Two hardening details close the remaining gaps. First, each node <b>salts the hash with its own random secret</b>, so an adversary who authors both hints and transactions can't precompute entries engineered to cancel (this blocks Wagner-style attacks on additive aggregates). Second, hints are <b>deterministic</b> given the chain and target height — anyone can regenerate the file and compare, so a published hint file is reproducible, not bespoke.</p>
+        <p>The result: wrong hints have exactly one power — making the final equation fail, at which point the node discards the attempt and fetches hints elsewhere. The failure mode is wasted hours, never a wrong UTXO set. That's the pattern all of these designs share (Utreexo proofs, SwiftSync hints, assumeutxo snapshots): <b>convert trust into deferred verification, and make every failure fail closed.</b> Untrusted helpers may make you slow; they may never make you wrong. The honest residue is the same as today's node: the reviewable constants in the source (assumevalid, snapshot hashes) and the code itself.</p>
+      </div>
+    </details>
+
+    <details>
+      <summary><span class="stitle">SwiftSync vs Utreexo, head to head</span> — they solve different problems</summary>
+      <div class="dbody">
+        <div class="tbl-wrap sm">
+          <table>
+            <thead><tr><th></th><th>Utreexo</th><th>SwiftSync</th></tr></thead>
+            <tbody>
+              <tr><td>Scope</td><td>node architecture, forever</td><td>initial sync only</td></tr>
+              <tr><td>State while running</td><td>~1 kB of roots</td><td>hint bits + one aggregate</td></tr>
+              <tr><td>Network cost</td><td>×1.2–1.7 blocks, ongoing</td><td>~100 MB hints, once</td></tr>
+              <tr><td>Parallel validation</td><td>no — forest updates are ordered</td><td>yes — fully commutative</td></tr>
+              <tr><td>Trust added</td><td>none</td><td>none for safety; pairs with assumevalid</td></tr>
+              <tr><td>Needs ecosystem</td><td>bridges, proof relay, wallet support</td><td>nothing — one hint file</td></tr>
+              <tr><td>After sync</td><td>stays a kilobyte node</td><td>becomes a stock node</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>They compose, too: a Utreexo node can use SwiftSync-style hints to skip proof verification for coins that die during sync — the ideas attack orthogonal costs (state vs. seriality).</p>
+      </div>
+    </details>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <p class="kicker">06 · the design space</p>
+    <h2>Utreexo isn't the only answer</h2>
+    <p>Several designs attack the same state problem from different angles. The columns that matter: what cost it deletes, what it charges, and whether trust assumptions move.</p>
+  </div>
+  <div class="wide">
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Approach</th><th>Deletes which cost</th><th>Pays with</th><th>Trust change</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Utreexo</td><td>UTXO state, forever (~1 kB node)</td><td>×1.2–1.7 block bandwidth; bridge infra; dynamic proofs</td><td>none</td><td><span class="tag live">utreexod, Floresta</span></td></tr>
+          <tr><td>SwiftSync <span class="tag">§05</span></td><td>UTXO state <em>during sync</em> + makes blocks verifiable in parallel</td><td>~100 MB hint file (fail-closed if wrong)</td><td>pairs with assumevalid</td><td><span class="tag">PoC, ~5× sync</span></td></tr>
+          <tr><td>assumeutxo</td><td>waiting: start at a snapshot, validate history behind</td><td>obtain + verify a 12 GB snapshot; state unchanged</td><td>reviewable snapshot hash in code</td><td><span class="tag live">shipped in Core</span></td></tr>
+          <tr><td>UHS <span class="tag">Fields</span></td><td>~half of state: store coin <em>hashes</em> only</td><td>peers attach coin data to relayed txs</td><td>none</td><td><span class="tag">proposal</span></td></tr>
+          <tr><td>TXO bitfield <span class="tag">Cohen</span></td><td>most of state: one spentness bit per historical output</td><td>separate index to locate coin data</td><td>none</td><td><span class="tag">proposal</span></td></tr>
+          <tr><td>UTXO commitments</td><td>trust in any snapshot: miners commit the set's hash</td><td>a consensus change — the hard part</td><td>reduces trust</td><td><span class="tag">never activated</span></td></tr>
+          <tr><td>RSA / class-group accumulators</td><td>proof staleness &amp; log-size proofs (constant-size instead)</td><td>trusted setup (RSA) or slow group math</td><td>setup ceremony (RSA)</td><td><span class="tag">research</span></td></tr>
+          <tr><td>ZeroSync</td><td>sync itself: verify a succinct proof of the whole chain</td><td>enormous proving cost; young cryptography</td><td>soundness of the proof system</td><td><span class="tag">research</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="col">
+    <details>
+      <summary><span class="stitle">Why not RSA accumulators?</span> — constant-size proofs exist, with a catch</summary>
+      <div class="dbody">
+        <p>RSA accumulators (Boneh–Bünz–Fisch, 2019) commit a set into a single group element; membership proofs are constant-size and don't go stale the way Merkle paths do, and thousands of proofs aggregate into one. The catch: you need a modulus nobody can factor — a <em>trusted setup ceremony</em>, anathema to Bitcoin's assumptions. Class groups avoid the ceremony but make every operation orders of magnitude slower. Merkle forests won in practice because they're plain SHA-2 hashing (SHA-512/256 in the shipped code): no new assumptions, fast on any CPU, auditable by anyone who can read forty lines of code.</p>
+      </div>
+    </details>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <p class="kicker">07 · who runs what</p>
+    <h2>Applicability: pick by deployment, not by elegance</h2>
+    <p>None of these designs dominates — they spend different budgets (RAM, bandwidth, latency, sync time), so the right one depends on what the machine is <em>for</em>. The honest matching:</p>
+  </div>
+  <div class="wide">
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>Deployment</th><th>Pain today</th><th>Best fit</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td>Desktop / workstation node</td><td>little — a few hours of sync</td><td>assumeutxo now; SwiftSync when it lands</td><td>the UTXO set already fits in RAM, so Utreexo would only add bandwidth; what's left to optimize is sync time</td></tr>
+          <tr><td>Home server / Raspberry&nbsp;Pi</td><td>cache thrashing: days of sync, dbcache tuning, SD-card wear</td><td><b>Utreexo</b> (utreexod, Floresta) + SwiftSync for the sync</td><td>validation becomes RAM-independent — the death-spiral mode this class of hardware lives in simply disappears</td></tr>
+          <tr><td>Phone / mobile wallet</td><td>light wallets verify PoW + inclusion but can't check rule-validity; Electrum-style ones also reveal addresses</td><td><b>Utreexo</b> from a checkpoint (embedded Floresta)</td><td>~1&nbsp;kB of state and forward-only validation are phone-sized; the first plausible path to a wallet that enforces the rules itself</td></tr>
+          <tr><td>Exchange / explorer / heavy infra</td><td>none of the above — they need rich indexes anyway</td><td>stock node, big dbcache; <b>run bridges</b> as a service</td><td>address and history indexes dwarf the UTXO set; accumulators shrink exactly the state they must keep expanded</td></tr>
+          <tr><td>Miner / pool</td><td>validation latency is money</td><td>stock node, everything in RAM</td><td>proof bytes and extra hashing in the block-relay hot path are pure cost with zero benefit</td></tr>
+          <tr><td>Ephemeral nodes — CI, analytics, fleet spin-up</td><td>every fresh instance pays a full IBD</td><td><b>SwiftSync</b> (+ assumeutxo today)</td><td>reproducible hints turn node provisioning into a mostly-parallel batch job</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="col">
+    <details>
+      <summary><span class="stitle">What a phone full node actually looks like</span> — the Utreexo endgame</summary>
+      <div class="dbody">
+        <p>The pieces: an embeddable compact-state node (Floresta ships as a library with bindings for exactly this), a <b>hardcoded accumulator checkpoint</b> — a kilobyte of roots, reviewable in the source like <code>assumevalid</code> — and forward-only validation from that checkpoint: headers, then blocks with proofs, a few thousand blocks rather than history. Wallet discovery uses compact block filters (BIP&nbsp;158) checked locally, so no server ever learns your addresses.</p>
+        <p>The honest costs: proof-carrying blocks are ~×1.7 bytes on a possibly metered connection, and sustained hashing costs battery — so the realistic mode is "validate on Wi-Fi and charge, serve the wallet locally all day," not always-on validation. The trust model is the desktop one: your own hashes plus a reviewable constant.</p>
+        <p>To be precise about what this improves on: today's light wallets are <em>not</em> "no validation." An SPV client verifies the header chain (proof-of-work, difficulty) and Merkle inclusion of its transactions, so a server cannot forge a payment to it — and Neutrino (BIP&nbsp;157/158) already fixed the privacy leak that Electrum-style and bloom-filter wallets have. What no light client can do is check <b>rule-validity</b>: scripts, signatures, inflation, double-spends elsewhere. It follows the most-work chain unconditionally, trusting the hashrate majority to enforce the rules, and it can be lied to by omission. That specific gap — enforcing consensus rules yourself — is the one a checkpointed Utreexo node closes; privacy it merely matches.</p>
+        <p>Further out on the same road: consensus-committed UTXO roots would remove even the checkpoint constant, and ZeroSync-style chain proofs would replace catching-up with downloading a proof — but those need a soft fork and maturing proof systems respectively. Utreexo-from-checkpoint needs neither.</p>
+      </div>
+    </details>
+    <details>
+      <summary><span class="stitle">Why the heavyweights keep fat nodes</span> — and why that's the design working</summary>
+      <div class="dbody">
+        <p><b>Miners</b> race the network: every millisecond spent validating a fresh block delays mining on top of it, which costs real revenue in stale and empty blocks. They keep the whole UTXO set pinned in RAM and want the block-relay hot path as thin as possible — attaching and verifying proofs there is a cost with no compensating benefit for them.</p>
+        <p><b>Exchanges, explorers, and API providers</b> need address indexes, transaction history, and mempool analytics — orders of magnitude more state than the UTXO set — so shrinking the UTXO set saves them approximately nothing. But they own the beefy hardware anyway, which makes them the natural <b>bridge operators</b>: maintaining the full forest and serving proofs is a service role that fits infrastructure budgets.</p>
+        <p>This split isn't a failure of adoption — it's the intended shape: <em>few fat provers, many thin verifiers</em>. The asymmetry between a data-center bridge and a phone verifying against 28 hashes is precisely what the accumulator was designed to create.</p>
+      </div>
+    </details>
+  </div>
+</section>
+
+<section>
+  <div class="col">
+    <p class="kicker">08 · further reading</p>
+    <h2>Go deeper</h2>
+    <ul class="reading">
+      <li><a href="https://eprint.iacr.org/2019/611.pdf">Utreexo: a dynamic hash-based accumulator</a> — Dryja's original paper; sections 1–4 are unusually readable. <span class="note">The data on coin lifetimes that justifies proof caching lives here.</span></li>
+      <li><a href="https://lukechampine.com/utreexo-talk.html">Utreexo in Context</a> — where accumulators sit among stateless-client designs.</li>
+      <li><a href="https://getfloresta.github.io/floresta-docs/ch00-00-introduction.html">Floresta docs</a> — a working Rust compact-state node, documented as a book. <span class="note">The engineering reality behind this article's simplifications.</span></li>
+      <li><a href="https://github.com/utreexo/utreexod">utreexod</a> — full node with Utreexo support (beta), including kilobyte-checkpoint bootstrap.</li>
+      <li><a href="https://gist.github.com/RubenSomsen/a61a37d14182ccd78760e477c78133cd">SwiftSync gist</a> and the <a href="https://delvingbitcoin.org/t/swiftsync-speeding-up-ibd-with-pre-generated-hints-poc/1562">Delving Bitcoin PoC thread</a>.</li>
+      <li><a href="https://bitcoinops.org/en/topics/utreexo/">Bitcoin Optech: Utreexo topic</a> — the maintained index of everything since the paper.</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="col">Interactive explainer · figures are mid-2026 mainnet approximations · the playground simplifies position bookkeeping (noted inline) but the root arithmetic is faithful.</div>
+</footer>
+
+<script>
+(function () {
+  "use strict";
+  var canvas = document.getElementById("canvas");
+  var svg = document.getElementById("edges");
+  var rootsEl = document.getElementById("roots");
+  var bitsEl = document.getElementById("bits");
+  var msgEl = document.getElementById("msg");
+  var btnAdd = document.getElementById("btn-add");
+  var btnSpend = document.getElementById("btn-spend");
+  var btnReset = document.getElementById("btn-reset");
+
+  var SLOT = 58, ROW = 62, TREE_GAP = 34, PAD_X = 26, PAD_Y = 34;
+  var MAX_LEAVES = 15;
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  var idSeq = 0, coinSeq = 0;
+  var forest = [];          // array of tree root nodes, kept sorted by height desc
+  var selected = null;      // leaf node id
+  var nodeEls = {};         // id -> DOM element
+  var busy = false;
+
+  function coinName(i) {
+    var s = ""; i += 1;
+    while (i > 0) { s = String.fromCharCode(97 + (i - 1) % 26) + s; i = Math.floor((i - 1) / 26); }
+    return s;
+  }
+  function leafNode(name) { return { id: "leaf-" + name, name: name, height: 0, left: null, right: null }; }
+  function join(a, b) { return { id: "n" + (idSeq++), name: null, height: a.height + 1, left: a, right: b }; }
+  function leavesOf(t) {
+    if (!t.left) return [t.name];
+    return leavesOf(t.left).concat(leavesOf(t.right));
+  }
+  function labelOf(t) {
+    if (!t.left) return t.name;
+    var ls = leavesOf(t);
+    return ls.length === 2 ? "H(" + ls[0] + "·" + ls[1] + ")" : "H(" + ls[0] + "…" + ls[ls.length - 1] + ")";
+  }
+  function countLeaves() { return forest.reduce(function (s, t) { return s + (1 << t.height); }, 0); }
+
+  // one carry-merge step; array order = display order (never re-sorted, so trees
+  // keep their places on screen). Returns a description or null if stable.
+  function mergeStep() {
+    for (var i = 0; i < forest.length - 1; i++) {
+      for (var j = i + 1; j < forest.length; j++) {
+        if (forest[i].height === forest[j].height) {
+          var a = forest[i], b = forest[j];
+          forest.splice(j, 1);
+          var merged = join(a, b);
+          forest.splice(i, 1, merged);
+          return "the two " + (1 << a.height) + "-trees carried into <b>" + labelOf(merged) + "</b>";
+        }
+      }
+    }
+    return null;
+  }
+
+  function contains(n, id) {
+    if (n.id === id) return true;
+    return n.left ? (contains(n.left, id) || contains(n.right, id)) : false;
+  }
+  // remove one leaf from a tree; returns the leftover subtrees in left-to-right
+  // order, so they can take the dissolved tree's place on screen without moving
+  function dissolve(node, targetId) {
+    if (node.id === targetId) return [];
+    if (!node.left) return [node];
+    return contains(node.left, targetId)
+      ? dissolve(node.left, targetId).concat([node.right])
+      : [node.left].concat(dissolve(node.right, targetId));
+  }
+
+  function findLeafPath(id) { // -> {tree, path:[nodes root..leaf]} or null
+    for (var i = 0; i < forest.length; i++) {
+      var path = [];
+      if (dfs(forest[i], id, path)) return { tree: forest[i], path: path };
+    }
+    return null;
+    function dfs(n, target, path) {
+      path.push(n);
+      if (n.id === target) return true;
+      if (n.left && (dfs(n.left, target, path) || dfs(n.right, target, path))) return true;
+      path.pop(); return false;
+    }
+  }
+  function proofOf(id) { // -> {siblings:[node], path:[node]} bottom-up siblings
+    var f = findLeafPath(id); if (!f) return null;
+    var p = f.path, sibs = [];
+    for (var k = p.length - 1; k > 0; k--) {
+      var parent = p[k - 1], child = p[k];
+      sibs.push(parent.left === child ? parent.right : parent.left);
+    }
+    return { siblings: sibs, path: p, tree: f.tree };
+  }
+
+  // layout: returns {nodes:[{id,x,y,cls,label}], edges:[[x1,y1,x2,y2]], w, h}
+  function layout(highlight) {
+    var maxH = forest.reduce(function (m, t) { return Math.max(m, t.height); }, 0);
+    var x = PAD_X, nodes = [], edges = [];
+    var totalH = (maxH + 1) * ROW + PAD_Y * 2 - 20;
+    forest.forEach(function (t) {
+      var width = (1 << t.height) * SLOT;
+      place(t, x, x + width, t);
+      x += width + TREE_GAP;
+    });
+    function place(n, x0, x1, root) {
+      var cx = (x0 + x1) / 2;
+      var cy = PAD_Y + (maxH - n.height) * ROW + 20;
+      var cls = n.left ? "internal" : "leaf";
+      if (n === root) cls += " root";
+      if (highlight) {
+        if (n.id === highlight.selected) cls += " selected";
+        else if (highlight.proof && highlight.proof.indexOf(n.id) >= 0) cls += " proof";
+        else if (highlight.path && highlight.path.indexOf(n.id) >= 0 && n.id !== highlight.selected) cls += " path";
+      }
+      nodes.push({ id: n.id, x: cx, y: cy, cls: cls, label: labelOf(n) });
+      if (n.left) {
+        var mid = (x0 + x1) / 2;
+        place(n.left, x0, mid, root);
+        place(n.right, mid, x1, root);
+        var childY = cy + ROW;
+        edges.push([cx, cy + 14, (x0 + mid) / 2, childY - 14]);
+        edges.push([cx, cy + 14, (mid + x1) / 2, childY - 14]);
+      }
+    }
+    return { nodes: nodes, edges: edges, w: Math.max(x - TREE_GAP + PAD_X, 320), h: totalH };
+  }
+
+  function render(highlight) {
+    var L = layout(highlight || currentHighlight());
+    canvas.style.width = L.w + "px";
+    canvas.style.height = L.h + "px";
+    svg.setAttribute("width", L.w); svg.setAttribute("height", L.h);
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    L.edges.forEach(function (e) {
+      var ln = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      ln.setAttribute("x1", e[0]); ln.setAttribute("y1", e[1]);
+      ln.setAttribute("x2", e[2]); ln.setAttribute("y2", e[3]);
+      svg.appendChild(ln);
+    });
+    var seen = {};
+    L.nodes.forEach(function (n) {
+      seen[n.id] = true;
+      var el = nodeEls[n.id];
+      if (!el) {
+        el = document.createElement("div");
+        el.dataset.id = n.id;
+        nodeEls[n.id] = el;
+        canvas.appendChild(el);
+        el.style.left = n.x + "px"; el.style.top = n.y + "px";
+        el.className = "node-el ghost " + n.cls;
+        el.textContent = n.label;
+        setLeafAttrs(el, n);
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () { el.className = "node-el " + n.cls; });
+        });
+      } else {
+        el.className = "node-el " + n.cls;
+        el.textContent = n.label;
+        el.style.left = n.x + "px"; el.style.top = n.y + "px";
+        setLeafAttrs(el, n);
+      }
+    });
+    function setLeafAttrs(el, n) {
+      if (n.cls.indexOf("leaf") >= 0) {
+        el.setAttribute("role", "button"); el.setAttribute("tabindex", "0");
+        el.setAttribute("aria-label", "coin " + n.label + (n.cls.indexOf("selected") >= 0 ? ", selected" : ""));
+      }
+    }
+    Object.keys(nodeEls).forEach(function (id) {
+      if (!seen[id]) {
+        var el = nodeEls[id]; delete nodeEls[id];
+        el.classList.add("ghost");
+        setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, reduced ? 0 : 350);
+      }
+    });
+    renderState();
+  }
+
+  function currentHighlight() {
+    if (!selected) return null;
+    var pr = proofOf(selected);
+    if (!pr) { selected = null; return null; }
+    return { selected: selected, proof: pr.siblings.map(function (s) { return s.id; }), path: pr.path.map(function (p) { return p.id; }) };
+  }
+
+  function renderState() {
+    var n = countLeaves();
+    var maxBit = 3;
+    forest.forEach(function (t) { maxBit = Math.max(maxBit, t.height); });
+    var html = '<span style="color:var(--faint)">n = ' + n + " =</span> ";
+    for (var b = maxBit; b >= 0; b--) {
+      var on = forest.some(function (t) { return t.height === b; });
+      html += '<span class="bit' + (on ? " on" : "") + '">' + (on ? 1 : 0) + '<span class="bit-cap">' + (1 << b) + "</span></span>";
+    }
+    bitsEl.innerHTML = html;
+    rootsEl.innerHTML = forest.length
+      ? forest.map(function (t) { return '<span class="chip">' + labelOf(t) + "</span>"; }).join("")
+      : '<span style="color:var(--faint)">— empty —</span>';
+    btnAdd.disabled = busy || countLeaves() >= MAX_LEAVES;
+    btnSpend.disabled = busy || !selected;
+  }
+
+  function say(html) { msgEl.innerHTML = html; }
+
+  function addCoin() {
+    if (busy || countLeaves() >= MAX_LEAVES) return;
+    busy = true; selected = null;
+    var name = coinName(coinSeq++);
+    forest.push(leafNode(name));
+    render(null);
+    say("Added coin <b>" + name + "</b> as a lone 1-tree — the counter's 1s bit.");
+    var merged = false;
+    (function step() {
+      setTimeout(function () {
+        var m = mergeStep();
+        if (m) {
+          merged = true;
+          render(null);
+          say("Added <b>" + name + "</b>: " + m + ".");
+          step();
+        } else {
+          if (!merged) say("Added coin <b>" + name + "</b> — no equal-height tree existed, so no carry. The counter just incremented.");
+          busy = false; renderState();
+        }
+      }, reduced ? 0 : 700);
+    })();
+  }
+
+  function selectLeaf(id) {
+    if (busy) return;
+    selected = (selected === id) ? null : id;
+    render();
+    if (selected) {
+      var pr = proofOf(selected);
+      var name = pr.path[pr.path.length - 1].name;
+      var sibNames = pr.siblings.map(function (s) { return labelOf(s); });
+      say("To spend <b>" + name + "</b>, a spender must supply the <span class='proof-word'>proof</span> {" +
+        (sibNames.join(", ") || "∅") + "} — " + pr.siblings.length + " hash" + (pr.siblings.length === 1 ? "" : "es") +
+        " up to root <b>" + labelOf(pr.tree) + "</b>. The node checks them against its stored root. That's the whole lookup.");
+    } else {
+      say("<b>Click any coin</b> to see the Merkle proof a spender would have to provide.");
+    }
+  }
+
+  function spend() {
+    if (busy || !selected) return;
+    var pr = proofOf(selected); if (!pr) return;
+    busy = true; renderState();
+    var target = selected;
+    var name = pr.path[pr.path.length - 1].name;
+    var sibNames = pr.siblings.map(function (s) { return labelOf(s); });
+    // phase 1: verify (highlight stays frozen on screen)
+    say("1/3 — Verify: hash <b>" + name + "</b> up through {" + (sibNames.join(", ") || "∅") +
+      "} and compare with the stored root <b>" + labelOf(pr.tree) + "</b>… match — the coin exists. ✓");
+    setTimeout(function () {
+      // phase 2: dissolve IN PLACE — the spent leaf and its ancestors vanish;
+      // the proof siblings stay where they are and become roots
+      var idx = forest.indexOf(pr.tree);
+      var pieces = dissolve(pr.tree, target);
+      forest.splice.apply(forest, [idx, 1].concat(pieces));
+      selected = null;
+      render(null);
+      say("2/3 — Delete: <b>" + name + "</b> and every hash above it vanish. Nothing else moves — the " +
+        "<span class='proof-word'>proof hashes</span> simply become roots (note the new rings). Verification and update used the same bytes.");
+      (function step() {
+        setTimeout(function () {
+          var m = mergeStep();
+          if (m) {
+            render(null);
+            say("3/3 — Tidy-up carry: " + m + ", so the forest again has at most one tree per size and the counter reads clean binary.");
+            step();
+          } else { busy = false; renderState(); }
+        }, reduced ? 0 : 1700);
+      })();
+    }, reduced ? 0 : 1400);
+  }
+
+  function reset() {
+    busy = false; selected = null; forest = []; idSeq = 0; coinSeq = 0;
+    Object.keys(nodeEls).forEach(function (id) { var el = nodeEls[id]; if (el.parentNode) el.parentNode.removeChild(el); });
+    nodeEls = {};
+    for (var i = 0; i < 6; i++) { forest.push(leafNode(coinName(coinSeq++))); while (mergeStep()) {} }
+    render(null);
+    say("<b>Click any coin</b> to see the Merkle proof a spender would have to provide. 6 coins = <code>110₂</code> → a 4-tree and a 2-tree.");
+  }
+
+  canvas.addEventListener("click", function (e) {
+    var el = e.target.closest(".node-el.leaf");
+    if (el) selectLeaf(el.dataset.id);
+  });
+  canvas.addEventListener("keydown", function (e) {
+    if ((e.key === "Enter" || e.key === " ") && e.target.classList && e.target.classList.contains("leaf")) {
+      e.preventDefault(); selectLeaf(e.target.dataset.id);
+    }
+  });
+  btnAdd.addEventListener("click", addCoin);
+  btnSpend.addEventListener("click", spend);
+  btnReset.addEventListener("click", reset);
+
+  reset();
+
+  window.__pg = {
+    forest: function () { return forest; },
+    count: countLeaves, add: addCoin, spend: spend, select: selectLeaf,
+    proofOf: proofOf, reset: reset, busy: function () { return busy; }
+  };
+})();
+</script>
+
+</body>
+</html>

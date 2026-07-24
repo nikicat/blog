@@ -17,7 +17,8 @@ site.use(theme({
   feed: {
     items: {
       content: (data) =>
-        String(data.children).replace(/(src|href)="\/(?!\/)/g, `$1="${prefix}/`),
+        data.feedContent ??
+          String(data.children).replace(/(src|href)="\/(?!\/)/g, `$1="${prefix}/`),
     },
   },
 }));
