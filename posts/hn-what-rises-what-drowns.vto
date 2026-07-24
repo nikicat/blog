@@ -1,0 +1,806 @@
+---
+title: "What rises, what drowns on Hacker News"
+date: 2026-07-24
+author: Nikolay Bryskin
+description: "Every story submitted to Hacker News over 60 days — 59,711 of them — cut by topic, format, source, timing, and title shape: what reaches the front page and what dies on /newest."
+tags:
+  - hackernews
+  - data
+  - blogging
+layout:
+readingInfo:
+  minutes: 8
+  words: 1600
+feedContent: |
+  <p>Every story submitted to Hacker News over the last 60 days — 59,711 of them — pulled from the Algolia API and cut by topic, format, source, timing, and title shape. 40.7% drown at 1–2 points and only 4.4% reach 100+ — but the odds swing 10× with choices you control: personal blogs own three-quarters of the front page, AI is the most oversupplied and worst-converting topic, question-mark titles sink, and the single best posting window is Saturday evening US.</p>
+  <p><a href="https://zxczxc.dev/posts/hn-what-rises-what-drowns/">Open the interactive edition</a></p>
+---
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What rises, what drowns on Hacker News</title>
+<meta name="description" content="Every story submitted to Hacker News over 60 days — 59,711 of them — cut by topic, format, source, timing, and title shape: what reaches the front page and what dies on /newest.">
+<meta property="og:title" content="What rises, what drowns on Hacker News">
+<meta property="og:description" content="Every story submitted to Hacker News over 60 days — 59,711 of them — cut by topic, format, source, timing, and title shape: what reaches the front page and what dies on /newest.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://zxczxc.dev/posts/hn-what-rises-what-drowns/">
+<link rel="canonical" href="https://zxczxc.dev/posts/hn-what-rises-what-drowns/">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🟠</text></svg>">
+<script defer src="https://nikicat-umami.fly.dev/script.js" data-website-id="2f348616-00b4-43c7-958c-76fcbc78ea5b"></script>
+</head>
+<body>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f9f9f7;
+    --surface: #fcfcfb;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --accent: #eb6834;
+    --series: #2a78d6;
+    --series-soft: #9ec5f4;
+    --div-pos: #2a78d6;
+    --div-neg: #e34948;
+    --tip-bg: #0b0b0b;
+    --tip-ink: #fcfcfb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page: #0d0d0d;
+      --surface: #1a1a19;
+      --ink: #ffffff;
+      --ink-2: #c3c2b7;
+      --muted: #898781;
+      --grid: #2c2c2a;
+      --baseline: #383835;
+      --border: rgba(255,255,255,0.10);
+      --accent: #d95926;
+      --series: #3987e5;
+      --series-soft: #1c5cab;
+      --div-pos: #3987e5;
+      --div-neg: #e66767;
+      --tip-bg: #fcfcfb;
+      --tip-ink: #0b0b0b;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --muted: #898781;
+    --grid: #2c2c2a;
+    --baseline: #383835;
+    --border: rgba(255,255,255,0.10);
+    --accent: #d95926;
+    --series: #3987e5;
+    --series-soft: #1c5cab;
+    --div-pos: #3987e5;
+    --div-neg: #e66767;
+    --tip-bg: #fcfcfb;
+    --tip-ink: #0b0b0b;
+  }
+
+  * { box-sizing: border-box; }
+  html { background: var(--page); }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.55;
+    font-size: 16px;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 48px 20px 96px; }
+
+  .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+
+  header.masthead { margin-bottom: 40px; }
+  .eyebrow {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 10px;
+  }
+  h1 {
+    font-size: clamp(28px, 5vw, 42px);
+    line-height: 1.12;
+    margin: 0 0 12px;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+  .dek { color: var(--ink-2); max-width: 60ch; margin: 0; }
+
+  section { margin-top: 56px; }
+  section > h2 {
+    font-size: 22px;
+    margin: 10px 0 8px;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+  section > .eyebrow { margin-bottom: 0; padding-top: 14px; border-top: 1px solid var(--grid); }
+  section p { color: var(--ink-2); max-width: 68ch; }
+  section p strong, section li strong { color: var(--ink); font-weight: 600; }
+  section ul { color: var(--ink-2); max-width: 68ch; padding-left: 1.2em; }
+  section li { margin: 6px 0; }
+
+  /* stat tiles */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-top: 28px; }
+  .tile {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px 18px 14px;
+  }
+  .tile .v { font-size: 30px; font-weight: 650; letter-spacing: -0.01em; line-height: 1.1; }
+  .tile .v em { font-style: normal; font-size: 17px; color: var(--muted); font-weight: 500; }
+  .tile .k { color: var(--ink-2); font-size: 13.5px; margin-top: 6px; line-height: 1.35; }
+
+  /* chart card */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px 20px 16px;
+    margin: 20px 0;
+  }
+  .card h3 { margin: 0 0 2px; font-size: 15.5px; }
+  .card .sub { color: var(--muted); font-size: 13px; margin: 0 0 16px; }
+
+  /* horizontal bars */
+  .hbars { display: grid; grid-template-columns: minmax(118px, max-content) 1fr; row-gap: 7px; column-gap: 12px; }
+  .hb-label {
+    font-size: 13.5px; color: var(--ink-2);
+    align-self: center; text-align: right;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .hb-track { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .hb-bar {
+    height: 15px; border-radius: 0 4px 4px 0;
+    background: var(--series);
+    flex: none;
+    transition: opacity 120ms;
+  }
+  @media (prefers-reduced-motion: reduce) { .hb-bar { transition: none; } }
+  .hb-bar.ref { background: var(--baseline); }
+  .hb-val {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12.5px; color: var(--ink-2); white-space: nowrap;
+  }
+  .hbars .group-gap { height: 8px; grid-column: 1 / -1; }
+  [data-tip]:hover .hb-bar, [data-tip]:focus-visible .hb-bar { opacity: 0.82; }
+  [data-tip] { outline: none; }
+  [data-tip]:focus-visible .hb-label { color: var(--accent); }
+
+  /* columns (hour / weekday) */
+  .cols { display: flex; align-items: flex-end; gap: 3px; height: 130px; margin-top: 8px; }
+  .col { flex: 1 1 0; display: flex; flex-direction: column; justify-content: flex-end; height: 100%; min-width: 0; border-radius: 3px 3px 0 0; }
+  .col .fill { background: var(--series); border-radius: 3px 3px 0 0; width: 100%; }
+  .col:hover .fill, .col:focus-visible .fill { opacity: 0.82; }
+  .col-axis { display: flex; gap: 3px; border-top: 1px solid var(--baseline); margin-top: 0; padding-top: 5px; }
+  .col-axis span {
+    flex: 1 1 0; text-align: center;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px; color: var(--muted); min-width: 0; white-space: nowrap;
+  }
+  .col-cap {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px; color: var(--ink-2); text-align: center; white-space: nowrap;
+    margin-bottom: 4px;
+  }
+
+  /* diverging lift chart */
+  .lift { display: grid; grid-template-columns: minmax(118px, max-content) 1fr; row-gap: 7px; column-gap: 12px; }
+  .lift-track { position: relative; display: flex; align-items: center; height: 15px; }
+  .lift-mid { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--baseline); }
+  .lift-bar { position: absolute; height: 15px; }
+  .lift-bar.pos { left: 50%; background: var(--div-pos); border-radius: 0 4px 4px 0; }
+  .lift-bar.neg { right: 50%; background: var(--div-neg); border-radius: 4px 0 0 4px; }
+  .lift-val {
+    position: absolute; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12.5px; color: var(--ink-2); white-space: nowrap;
+  }
+  .legend { display: flex; gap: 18px; margin: 0 0 14px; font-size: 13px; color: var(--ink-2); flex-wrap: wrap; }
+  .legend .chip { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+
+  /* heatmap */
+  .heat { display: grid; grid-template-columns: max-content repeat(7, 1fr); gap: 2px; }
+  .heat .hlab {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px; color: var(--muted);
+    display: flex; align-items: center; justify-content: flex-end;
+    padding-right: 8px; white-space: nowrap;
+  }
+  .heat .hday { justify-content: center; padding: 0 0 4px; }
+  .heat .cell {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px; text-align: center; padding: 8px 0;
+    border-radius: 3px; min-width: 0;
+  }
+  .heat .cell:hover, .heat .cell:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
+  /* tables */
+  .tablewrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th {
+    text-align: left; font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--muted); font-weight: 500;
+    padding: 6px 14px 6px 0; border-bottom: 1px solid var(--baseline);
+  }
+  td { padding: 7px 14px 7px 0; border-bottom: 1px solid var(--grid); color: var(--ink-2); vertical-align: top; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.num { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 13px; }
+  td.t { color: var(--ink); }
+  tr:last-child td { border-bottom: none; }
+  td .dom { color: var(--muted); font-size: 12.5px; }
+
+  details { margin-top: 12px; }
+  summary {
+    cursor: pointer; color: var(--muted); font-size: 13px;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .note { font-size: 13.5px; color: var(--muted); max-width: 68ch; }
+  a { color: var(--accent); }
+
+  /* tooltip */
+  #tip {
+    position: fixed; z-index: 10; pointer-events: none;
+    background: var(--tip-bg); color: var(--tip-ink);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px; line-height: 1.4;
+    padding: 6px 9px; border-radius: 5px;
+    max-width: 300px; opacity: 0; transition: opacity 90ms;
+    white-space: pre-line;
+  }
+  @media (prefers-reduced-motion: reduce) { #tip { transition: none; } }
+  #tip.on { opacity: 1; }
+
+  @media (max-width: 560px) {
+    .hbars, .lift { grid-template-columns: 92px 1fr; }
+    .hb-label { font-size: 12px; }
+  }
+</style>
+
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">Hacker News · 59,711 stories · May 25 – Jul 24, 2026</p>
+  <h1>What rises, what drowns on Hacker News</h1>
+  <p class="dek">Every story submitted over the last 60 days, pulled from the Algolia HN
+  API and cut by topic, format, source, timing, and title shape. “Drowned” means the post
+  never got past 2 points; a “hit” reached 100+.</p>
+</header>
+
+<div class="tiles">
+  <div class="tile"><div class="v">995<em>/day</em></div><div class="k">stories submitted — your post competes with ~1,000 others</div></div>
+  <div class="tile"><div class="v">3<em> pts</em></div><div class="k">median score. Half of everything ends at 3 points or fewer</div></div>
+  <div class="tile"><div class="v">40.7%</div><div class="k">drown at 1–2 points, never escaping the /newest page</div></div>
+  <div class="tile"><div class="v">4.4%</div><div class="k">reach 100+ points — roughly 44 stories a day</div></div>
+</div>
+
+<section>
+  <p class="eyebrow">The funnel</p>
+  <h2>84.8% of posts never reach 10 points</h2>
+  <p>The distribution is brutally bottom-heavy. The real gate is the /newest page:
+  a post needs a handful of upvotes in its first hour to touch the front page at all.
+  Past that gate, outcomes spread wide — which is why the 100–499 band is bigger than
+  the 50–99 band. Posts that escape tend to keep climbing.</p>
+
+  <div class="card">
+    <h3>Where stories end up</h3>
+    <p class="sub">Share of all 59,711 stories by final score</p>
+    <div class="hbars" id="dist"></div>
+  </div>
+</section>
+
+<section>
+  <p class="eyebrow">What rises</p>
+  <h2>Niche depth beats hot topics</h2>
+  <p>Hit rate by topic is almost a mirror of how crowded the topic is. Retro-computing —
+  a tiny niche — converts at more than double the site average. AI, the most submitted
+  topic by far, converts <em>worst</em>. Evergreen HN material (languages, databases,
+  policy fights, Linux) all sits comfortably above average.</p>
+
+  <div class="card">
+    <h3>Chance of reaching 100+ points, by topic</h3>
+    <p class="sub">Topics matched by title keywords; a story can count in several. Gray bar = site average.</p>
+    <div class="hbars" id="topics"></div>
+  </div>
+
+  <p>Where hits come from matters just as much: <strong>HN is a personal-blog engine.</strong>
+  Nearly three-quarters of all front-page hits are personal blogs and independent project
+  sites — not media, not GitHub, not corporate blogs. Corporate blogs have the best
+  per-post odds (12.5%) but barely submit; media is a steady middle; platforms drag
+  you down.</p>
+
+  <div class="card">
+    <h3>Who owns the front page</h3>
+    <p class="sub">Share of the 2,629 stories that reached 100+ points, by source type. Hover for per-post odds.</p>
+    <div class="hbars" id="sources"></div>
+  </div>
+</section>
+
+<section>
+  <p class="eyebrow">The AI paradox</p>
+  <h2>AI dominates the leaderboard and still has the worst odds</h2>
+  <p>AI/LLM stories are <strong>25.3% of submissions but only 18.4% of hits</strong>.
+  The genre’s giant top-scorers (model releases, the anti-AI essay of the week) hide a
+  flooded middle: an ordinary AI link converts at 3.6% vs 5.3% for everything else, and
+  “Show&nbsp;HN” plus AI is the deadest combination in the dataset — half the hit rate of
+  a non-AI Show&nbsp;HN.</p>
+
+  <div class="card">
+    <h3>Hit rate with and without AI in the title</h3>
+    <p class="sub">% of stories reaching 100+ points</p>
+    <div class="hbars" id="ai"></div>
+  </div>
+
+  <p>What still works in AI: lab releases (anthropic.com and openai.com submissions hit
+  ~18% of the time), benchmark-moving open models, incidents and misbehavior stories, and
+  well-written skepticism — “I’m Tired of Talking to AI” (2,013 pts) and “They’re made out
+  of weights” (1,529 pts) both out-scored almost every product launch. What drowns:
+  yet another wrapper, agent framework, or AI productivity tool.</p>
+</section>
+
+<section>
+  <p class="eyebrow">The crypto remnant</p>
+  <h2>Blockchain converts only when the coin is the setting, not the subject</h2>
+  <p>HN is post-crypto: blockchain is <strong>0.6% of submissions</strong> (AI is 25%),
+  and what remains faces indifference, residual hostility, and the heaviest flagging on
+  the site. The window’s two biggest “crypto” stories were schadenfreude and a ban —
+  “Crypto in 2026: Oh, This Is the Bad Place” (426&nbsp;pts) and “Codeberg Bans
+  Cryptocurrency Projects” (365&nbsp;pts). The best neutral one, a Bitcoin payment
+  processor, managed 114.</p>
+
+  <div class="card">
+    <div class="tablewrap">
+    <table>
+      <thead><tr><th>Segment</th><th class="num">n</th><th class="num">% drowned ≤2</th><th class="num">% hit 100+</th></tr></thead>
+      <tbody>
+        <tr><td class="t">All blockchain / crypto</td><td class="num">338</td><td class="num">44.1</td><td class="num">2.07</td></tr>
+        <tr><td class="t">Tech content (market/crime/token news removed)</td><td class="num">260</td><td class="num">50.0</td><td class="num">2.31</td></tr>
+        <tr><td class="t">Show HN, crypto tech</td><td class="num">23</td><td class="num">52.2</td><td class="num">0.00</td></tr>
+        <tr><td class="t">Site average</td><td class="num">59,711</td><td class="num">40.7</td><td class="num">4.40</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <p>Two patterns inside the numbers. First, a <strong>voting-bloc mirage</strong>:
+  Monero/Nostr posts sitting at 30–67 points with zero to two comments are a community
+  upvoting its own — points without conversation, no front page. Second, the exception:
+  <strong>content that would survive with the coin removed</strong>. A zero-knowledge-proof
+  post framed as privacy tech hit 231; a crypto-datacenters-vs-Texas-grid post hit 154 as
+  an infrastructure story. “Fitting a 12&nbsp;GB UTXO set into a kilobyte” is a
+  data-structures title; “Running a Bitcoin Lightning node” is a crypto title. Lead with
+  the engineering problem and the numbers.</p>
+
+  <p class="note">Thin sample (n=260) collected in a bear-sentiment window — the ceiling
+  may be understated.</p>
+</section>
+
+<section>
+  <p class="eyebrow">What drowns</p>
+  <h2>The mortality table</h2>
+  <p>Format kills more posts than topic does. Video in any form barely registers.
+  Blogging platforms (Medium, Substack) underperform the same writing on a personal
+  domain. A bare GitHub repo drowns 53.5% of the time — code needs a story wrapped
+  around it. And Show&nbsp;HN is a harsh room: half of all launches die at 1–2 points.</p>
+
+  <div class="card">
+    <div class="tablewrap">
+    <table>
+      <thead><tr><th>Format / venue</th><th class="num">posts</th><th class="num">% drowned ≤2</th><th class="num">% hit 100+</th></tr></thead>
+      <tbody>
+        <tr><td class="t">Medium.com post</td><td class="num">591</td><td class="num">55.5</td><td class="num">0.85</td></tr>
+        <tr><td class="t">[video] tag</td><td class="num">1,337</td><td class="num">53.8</td><td class="num">0.60</td></tr>
+        <tr><td class="t">GitHub repo link</td><td class="num">6,181</td><td class="num">53.5</td><td class="num">2.78</td></tr>
+        <tr><td class="t">Show HN with AI in title</td><td class="num">2,627</td><td class="num">52.6</td><td class="num">0.99</td></tr>
+        <tr><td class="t">YouTube link</td><td class="num">1,677</td><td class="num">52.1</td><td class="num">0.48</td></tr>
+        <tr><td class="t">Show HN (all)</td><td class="num">7,245</td><td class="num">51.8</td><td class="num">1.70</td></tr>
+        <tr><td class="t">Substack post</td><td class="num">1,570</td><td class="num">46.6</td><td class="num">1.85</td></tr>
+        <tr><td class="t">Ask HN</td><td class="num">2,088</td><td class="num">44.4</td><td class="num">1.82</td></tr>
+        <tr><td class="t">Site average</td><td class="num">59,711</td><td class="num">40.7</td><td class="num">4.40</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <p class="note">The one boosted format: Launch&nbsp;HN (YC companies, placed by the site) —
+  only 20 in the window, but 40% hit 100+ and none drowned. Not reachable for the rest of us.</p>
+
+  <p class="note">Also invisible in this data: flags. Users with 30+ karma can flag, flags
+  outweigh upvotes, and flagged-dead posts never reach the API — so every drown rate here
+  is a slight undercount, worst in the most-flagged categories (politics without a tech
+  nexus, crypto, ragebait). The outrage-adjacent winners below are survivors of a filter
+  this dataset cannot see.</p>
+</section>
+
+<section>
+  <p class="eyebrow">Show HN deep-dive</p>
+  <h2>Niche launches: higher floor, lower ceiling</h2>
+  <p>Show HNs for platform-niche tools — Linux, a specific desktop environment, terminal
+  software — drown slightly <em>less</em> than average and reach 50+ points at the same
+  rate: HN’s audience is disproportionately these people, so the niche finds you on
+  /newest. But they cross 100+ only half as often. Winners cluster at 70–230 points —
+  once the sub-audience that can run the thing has voted, the ceiling arrives.</p>
+
+  <div class="card">
+    <div class="tablewrap">
+    <table>
+      <thead><tr><th>Show HN segment</th><th class="num">n</th><th class="num">% drowned ≤2</th><th class="num">% reach 50+</th><th class="num">% hit 100+</th></tr></thead>
+      <tbody>
+        <tr><td class="t">All Show HN</td><td class="num">7,245</td><td class="num">51.8</td><td class="num">3.16</td><td class="num">1.70</td></tr>
+        <tr><td class="t">Linux / DE / terminal niche</td><td class="num">390</td><td class="num">49.5</td><td class="num">3.85</td><td class="num">1.03</td></tr>
+        <tr><td class="t">Non-niche, non-AI</td><td class="num">4,366</td><td class="num">51.5</td><td class="num">3.85</td><td class="num">2.18</td></tr>
+        <tr><td class="t">With AI in title</td><td class="num">2,627</td><td class="num">52.6</td><td class="num">—</td><td class="num">0.99</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <p>The strategic fork: plain links <em>about</em> the same Linux/terminal niche convert
+  at <strong>7.6%</strong> — among the best segments on the site — because everyone can
+  read about a thing even when only some can run it. The write-up of the project on your
+  own domain is the higher-ceiling play; the Show&nbsp;HN launch is the higher-floor one.
+  If you launch niche: a GIF or asciinema cast at the top of the README, a WASM/browser
+  version if remotely feasible, and the platform named honestly in the title — “for
+  Hyprland” filters in the passionate voters.</p>
+</section>
+
+<section>
+  <p class="eyebrow">Timing</p>
+  <h2>Weekends and late UTC evenings are kinder</h2>
+  <p>Two forces pull against each other: <strong>audience</strong> (how many voters are
+  awake) and <strong>competition</strong> (how fast /newest scrolls). Submissions peak
+  12:00–17:00 UTC — US morning — which is also when the crowd is thickest. The heatmap
+  below shows where the balance lands: the single best cell is <strong>Sunday 00:00–04:00
+  UTC</strong> — Saturday evening in the US — at 7.3%, 1.7× the site average and 3.3× the
+  worst cell. Weekends beat weekdays across the board (5.4% vs 4.2%), and the weekday
+  04:00–12:00 UTC trough — Europe’s morning, America asleep — is the worst place to post
+  anything.</p>
+
+  <div class="card">
+    <h3>Hit rate by hour submitted (UTC)</h3>
+    <p class="sub">% of stories reaching 100+ points. Hover for exact values and volume.</p>
+    <div class="cols" id="hours"></div>
+    <div class="col-axis"><span>00</span><span></span><span></span><span></span><span></span><span></span><span>06</span><span></span><span></span><span></span><span></span><span></span><span>12</span><span></span><span></span><span></span><span></span><span></span><span>18</span><span></span><span></span><span></span><span></span><span>23</span></div>
+    <details><summary>table view</summary>
+      <div class="tablewrap"><table id="hours-table"></table></div>
+    </details>
+  </div>
+
+  <div class="card">
+    <h3>Hit rate by day × time of day (UTC)</h3>
+    <p class="sub">% of stories reaching 100+ points, in 4-hour blocks. Hover for drown rate and volume.</p>
+    <div class="heat" id="heat"></div>
+  </div>
+
+  <p><strong>Show HN plays by different rules.</strong> A launch needs a big audience more
+  than a thin /newest: Show HN converts best posted 12:00–20:00 UTC (1.9–2.1% hit) and
+  worst 04:00–08:00 UTC (0.9% hit, 61% drown). The mega-hits follow the audience too —
+  56% of all 500+ point stories were posted between 12:00 and 20:00 UTC.</p>
+
+  <p class="note">Caveat: timing is entangled with content. Weekend posts skew toward
+  hobby projects and deep dives (which HN likes anyway), and corporate releases are
+  scheduled for US mornings. Treat the weekend/evening edge as partly the content, partly
+  the clock.</p>
+</section>
+
+<section>
+  <p class="eyebrow">Title anatomy</p>
+  <h2>Specifics rise, questions sink</h2>
+  <p>Correlation, not causation — but consistent. Titles with a concrete number
+  (“$1,600 in ESP32s”, “6.0.0”, “18 years of comments”) outperform. A year in
+  parentheses — the classic “(1998)” repost of a timeless piece — nearly doubles the
+  base rate. Short beats long, first-person (“I replaced…”) helps. Question-mark titles
+  and anything tagged [video] sink.</p>
+
+  <div class="card">
+    <h3>Hit-rate lift vs site average</h3>
+    <p class="sub">1.0× = the 4.4% baseline chance of reaching 100+ points</p>
+    <div class="legend">
+      <span><span class="chip" style="background:var(--div-pos)"></span>above baseline</span>
+      <span><span class="chip" style="background:var(--div-neg)"></span>below baseline</span>
+    </div>
+    <div class="lift" id="lift"></div>
+  </div>
+</section>
+
+<section>
+  <p class="eyebrow">Leaderboards</p>
+  <h2>The window’s biggest stories</h2>
+  <p>The top of the chart is dominated by AI-lab drama and David-vs-Goliath stories.
+  Note what the #2 post of the entire 60 days is: a Show&nbsp;HN about replacing a $120k
+  bowling-center system with $1,600 of ESP32s — cheap hardware beating expensive
+  software, told first-person with numbers in the title. That is the HN formula in
+  one line.</p>
+
+  <div class="card">
+    <div class="tablewrap">
+    <table>
+      <thead><tr><th class="num">pts</th><th class="num">cmts</th><th>story</th></tr></thead>
+      <tbody>
+        <tr><td class="num">3,158</td><td class="num">2,313</td><td class="t">Statement on US government directive to suspend access to Fable 5 and Mythos 5 <span class="dom">anthropic.com</span></td></tr>
+        <tr><td class="num">2,926</td><td class="num">355</td><td class="t">Show HN: I replaced a $120k bowling center system with $1,600 in ESP32s <span class="dom">self post</span></td></tr>
+        <tr><td class="num">2,626</td><td class="num">2,160</td><td class="t">Claude Fable 5 <span class="dom">anthropic.com</span></td></tr>
+        <tr><td class="num">2,445</td><td class="num">750</td><td class="t">Claude Code is steganographically marking requests <span class="dom">thereallo.dev</span></td></tr>
+        <tr><td class="num">2,210</td><td class="num">490</td><td class="t">The newest Instagram “exploit” is the goofiest I’ve seen <span class="dom">0xsid.com</span></td></tr>
+        <tr><td class="num">2,106</td><td class="num">1,215</td><td class="t">Kimi K3: Open Frontier Intelligence <span class="dom">kimi.com</span></td></tr>
+        <tr><td class="num">2,013</td><td class="num">950</td><td class="t">I’m Tired of Talking to AI <span class="dom">orchidfiles.com</span></td></tr>
+        <tr><td class="num">1,922</td><td class="num">1,736</td><td class="t">Steam Machine launches today <span class="dom">store.steampowered.com</span></td></tr>
+        <tr><td class="num">1,774</td><td class="num">1,376</td><td class="t">Claude Opus 4.8 <span class="dom">anthropic.com</span></td></tr>
+        <tr><td class="num">1,753</td><td class="num">503</td><td class="t">If you are asking for human attention, demonstrate human effort <span class="dom">tombedor.dev</span></td></tr>
+        <tr><td class="num">1,734</td><td class="num">746</td><td class="t">Android Developer Verification: Threat masquerading as protection <span class="dom">f-droid.org</span></td></tr>
+        <tr><td class="num">1,714</td><td class="num">369</td><td class="t">An entire Herculaneum scroll has been read for the first time <span class="dom">scrollprize.org</span></td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <p>Domains that convert best (25+ submissions in the window): corporate AI labs, a
+  handful of elite institutions — and personal blogs that have become brands.
+  simonwillison.net converts at the same rate as openai.com.</p>
+
+  <div class="card">
+    <div class="tablewrap">
+    <table>
+      <thead><tr><th>domain</th><th class="num">posts</th><th class="num">% hit 100+</th></tr></thead>
+      <tbody>
+        <tr><td class="t">blog.google</td><td class="num">40</td><td class="num">20.0</td></tr>
+        <tr><td class="t">blog.cloudflare.com</td><td class="num">47</td><td class="num">19.1</td></tr>
+        <tr><td class="t">anthropic.com</td><td class="num">82</td><td class="num">18.3</td></tr>
+        <tr><td class="t">openai.com</td><td class="num">73</td><td class="num">17.8</td></tr>
+        <tr><td class="t">smithsonianmag.com</td><td class="num">35</td><td class="num">17.1</td></tr>
+        <tr><td class="t">simonwillison.net</td><td class="num">47</td><td class="num">17.0</td></tr>
+        <tr><td class="t">pluralistic.net</td><td class="num">32</td><td class="num">15.6</td></tr>
+        <tr><td class="t">science.org</td><td class="num">109</td><td class="num">12.8</td></tr>
+        <tr><td class="t">lwn.net</td><td class="num">55</td><td class="num">12.7</td></tr>
+        <tr><td class="t">daringfireball.net</td><td class="num">32</td><td class="num">12.5</td></tr>
+        <tr><td class="t">404media.co</td><td class="num">121</td><td class="num">10.7</td></tr>
+        <tr><td class="t">spectrum.ieee.org</td><td class="num">113</td><td class="num">10.6</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+</section>
+
+<section>
+  <p class="eyebrow">Method</p>
+  <h2>Notes and caveats</h2>
+  <ul>
+    <li>All stories with <span class="mono">tags=story</span> from the Algolia HN Search API,
+    May 25 – Jul 24, 2026 (60 days, 59,711 stories). Flagged/dead posts are not in the API,
+    so true drown rates are slightly higher than shown — most so in heavily flagged
+    categories (non-tech politics, crypto). Never solicit upvotes: the voting-ring
+    detector buries posts silently and penalizes accounts and domains.</li>
+    <li>Scores are a snapshot at collection time; stories from the last day or two were
+    still accruing points.</li>
+    <li>Topic buckets are keyword regexes on titles — approximate, overlapping, and blind
+    to article content. Retro-computing’s lead comes with n=223.</li>
+    <li>Everything here is correlation. A question-mark title doesn’t cause failure —
+    but it does mark the kind of post that fails.</li>
+  </ul>
+</section>
+
+<footer style="border-top:1px solid var(--grid); margin-top:56px; padding-top:18px; font-size:13px; color:var(--muted);">
+  Data: Algolia HN Search API, May 25 – Jul 24, 2026 · analysis scripts and the companion playbook live in this blog's repo · <a href="/">zxczxc.dev</a>
+</footer>
+</div>
+<div id="tip" role="status"></div>
+
+<script>
+(function () {
+  // ---------- data ----------
+  const dist = [
+    ["1–2 pts", 40.7, 24314], ["3–9", 44.1, 26324], ["10–49", 8.5, 5083],
+    ["50–99", 2.3, 1361], ["100–499", 3.7, 2222], ["500+", 0.7, 407],
+  ];
+  const topics = [
+    ["Retro-computing", 9.42, 223], ["Prog. languages", 6.22, 1689],
+    ["Databases", 6.19, 775], ["Policy / law / EU", 5.75, 1512],
+    ["Linux / OSS", 5.23, 2064], ["Big tech", 5.13, 2689],
+    ["Hardware / chips", 4.90, 1122], ["Science / space", 4.66, 1201],
+    ["Security", 4.48, 1228], ["Startups / biz", 4.01, 1146],
+    ["Web / browser", 3.28, 1767], ["AI / LLM", 3.20, 15135],
+    ["All stories", 4.40, 59711, true],
+  ];
+  const sources = [
+    ["Personal blogs & sites", 73.8, "5.12% of 37,885 such posts hit"],
+    ["Media outlets", 12.4, "4.23% of 7,685 hit"],
+    ["github.com", 6.5, "2.78% of 6,181 hit"],
+    ["Corporate blogs", 2.6, "12.45% of 546 hit — best per-post odds"],
+    ["Self posts (text)", 1.8, "2.01% of 2,387 hit"],
+    ["Substack / Medium", 1.3, "1.60% of 2,067 hit"],
+    ["arxiv.org", 1.0, "3.91% of 640 hit"],
+    ["Wikipedia", 0.4, "1.56% of 643 hit"],
+    ["YouTube", 0.3, "0.48% of 1,677 hit"],
+  ];
+  const ai = [
+    ["Link, no AI", 5.28, 38815], ["Link, AI", 3.61, 11491], null,
+    ["Show HN, no AI", 2.10, 4618], ["Show HN, AI", 0.99, 2627],
+  ];
+  const hours = [4.95,5.16,3.74,4.87,4.02,3.88,2.59,2.50,3.68,3.55,3.77,4.51,3.86,4.42,5.06,5.15,5.05,4.72,4.24,4.31,4.99,4.60,4.66,4.51];
+  const hourN = [1556,1416,1499,1335,1369,1419,1505,1801,1876,1946,2097,2637,3346,3824,4292,4115,3959,3687,3394,3273,2903,2477,2188,1797];
+  const days = [["Mon",4.72],["Tue",4.31],["Wed",3.80],["Thu",3.93],["Fri",4.19],["Sat",5.14],["Sun",5.69]];
+  const lifts = [
+    ["Year in title (1998)", 1.92, 1554], ["Contains a number", 1.42, 12487],
+    ["Short (≤6 words)", 1.24, 16666], ["First-person (I/my/we)", 1.17, 4282],
+    ["[pdf]", 1.03, 442], ["Starts why/how", 0.95, 1937],
+    ["Long (≥12 words)", 0.83, 12020], ["Ends with “?”", 0.67, 3105],
+    ["[video]", 0.14, 1337],
+  ];
+
+  // ---------- builders ----------
+  const fmt = n => n.toLocaleString("en-US");
+
+  function hbars(el, rows, opts) {
+    const max = Math.max(...rows.filter(Boolean).map(r => r[1]));
+    for (const r of rows) {
+      if (!r) {
+        const gap = document.createElement("div");
+        gap.className = "group-gap";
+        el.appendChild(gap);
+        continue;
+      }
+      const [label, val, extra, isRef] = r;
+      const row = document.createElement("div");
+      row.style.display = "contents";
+      const tip = opts && opts.tip ? opts.tip(r) :
+        label + " — " + val + "%" + (typeof extra === "number" ? "\nn = " + fmt(extra) : "");
+      const lab = document.createElement("div");
+      lab.className = "hb-label";
+      lab.textContent = label;
+      const track = document.createElement("div");
+      track.className = "hb-track";
+      track.setAttribute("data-tip", tip);
+      track.setAttribute("tabindex", "0");
+      const bar = document.createElement("span");
+      bar.className = "hb-bar" + (isRef ? " ref" : "");
+      bar.style.width = "calc((100% - 52px) * " + (val / max) + ")";
+      const v = document.createElement("span");
+      v.className = "hb-val";
+      v.textContent = val + "%";
+      track.appendChild(bar);
+      track.appendChild(v);
+      el.appendChild(lab);
+      el.appendChild(track);
+    }
+  }
+
+  hbars(document.getElementById("dist"), dist, {
+    tip: r => r[0] + " — " + r[1] + "% of stories\n" + fmt(r[2]) + " stories",
+  });
+  hbars(document.getElementById("topics"), topics);
+  hbars(document.getElementById("sources"), sources, {
+    tip: r => r[0] + " — " + r[1] + "% of all hits\n" + r[2],
+  });
+  hbars(document.getElementById("ai"), ai);
+
+  // columns
+  function cols(el, values, capIdx, tips) {
+    const max = Math.max(...values);
+    values.forEach((v, i) => {
+      const c = document.createElement("div");
+      c.className = "col";
+      c.setAttribute("data-tip", tips(i, v));
+      c.setAttribute("tabindex", "0");
+      if (capIdx.includes(i)) {
+        const cap = document.createElement("div");
+        cap.className = "col-cap";
+        cap.textContent = v.toFixed(1);
+        c.appendChild(cap);
+      }
+      const f = document.createElement("div");
+      f.className = "fill";
+      f.style.height = (v / max * 100) + "%";
+      c.appendChild(f);
+      el.appendChild(c);
+    });
+  }
+  cols(document.getElementById("hours"), hours, [1, 7, 15],
+    (i, v) => String(i).padStart(2, "0") + ":00 UTC — " + v.toFixed(2) + "% hit 100+\n" + fmt(hourN[i]) + " submissions");
+
+  // day × block heatmap
+  const heatHit = [[4.1,4.4,5.2,4.2,3.9,4.4,7.3],[4.4,3.1,2.2,3.2,2.9,2.6,4.4],[2.9,5.0,3.5,3.4,3.6,5.1,4.4],[5.8,3.6,4.0,5.0,4.2,5.5,6.1],[4.9,4.9,3.8,3.3,4.6,5.9,6.2],[4.8,4.7,3.9,3.8,5.5,5.8,5.5]];
+  const heatDrown = [[36.2,30.8,36.7,33.7,38.6,38.1,21.4],[45.4,46.3,50.6,47.8,48.0,47.2,31.6],[46.0,51.7,51.6,46.3,46.8,48.1,39.8],[39.6,51.5,45.2,39.8,49.2,39.1,33.4],[38.7,43.7,43.4,42.3,46.0,30.8,35.4],[28.0,30.1,29.2,33.8,34.6,21.4,24.6]];
+  const heatN = [[704,900,979,1014,982,680,547],[804,993,1082,973,989,617,636],[1176,1463,1387,1489,1296,865,880],[2285,2943,2885,2774,2256,1208,1226],[2194,2671,2501,2490,1881,1268,1308],[1504,1575,1505,1625,1208,988,960]];
+  const blocks = ["00–04","04–08","08–12","12–16","16–20","20–24"];
+  const ramp = ["#cde2fb","#9ec5f4","#6da7ec","#3987e5","#256abf","#184f95","#0d366b"];
+  const heatEl = document.getElementById("heat");
+  const hMin = 2.2, hMax = 7.3;
+  heatEl.insertAdjacentHTML("beforeend",
+    "<div class='hlab'></div>" + days.map(d => "<div class='hlab hday'>" + d[0] + "</div>").join(""));
+  heatHit.forEach((row, b) => {
+    heatEl.insertAdjacentHTML("beforeend", "<div class='hlab'>" + blocks[b] + "</div>");
+    row.forEach((v, d) => {
+      const idx = Math.min(6, Math.floor((v - hMin) / (hMax - hMin) * 7));
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.style.background = ramp[idx];
+      cell.style.color = idx >= 3 ? "#ffffff" : "#0b0b0b";
+      cell.textContent = v.toFixed(1);
+      cell.setAttribute("tabindex", "0");
+      cell.setAttribute("data-tip", days[d][0] + " " + blocks[b] + " UTC — " + v.toFixed(1) +
+        "% hit 100+\n" + heatDrown[b][d].toFixed(1) + "% drown · " + fmt(heatN[b][d]) + " posts");
+      heatEl.appendChild(cell);
+    });
+  });
+
+  // hours table view
+  const ht = document.getElementById("hours-table");
+  ht.innerHTML = "<thead><tr><th>hour UTC</th><th class='num'>% hit 100+</th><th class='num'>submissions</th></tr></thead><tbody>" +
+    hours.map((v, i) => "<tr><td class='t mono'>" + String(i).padStart(2, "0") + ":00</td><td class='num'>" +
+      v.toFixed(2) + "</td><td class='num'>" + fmt(hourN[i]) + "</td></tr>").join("") + "</tbody>";
+
+  // lift chart
+  const liftEl = document.getElementById("lift");
+  const maxDev = Math.max(...lifts.map(r => Math.abs(r[1] - 1)));
+  for (const [label, val, n] of lifts) {
+    const lab = document.createElement("div");
+    lab.className = "hb-label";
+    lab.textContent = label;
+    const track = document.createElement("div");
+    track.className = "lift-track";
+    track.setAttribute("data-tip", label + " — " + val.toFixed(2) + "× baseline\nn = " + fmt(n));
+    track.setAttribute("tabindex", "0");
+    const mid = document.createElement("span");
+    mid.className = "lift-mid";
+    const dev = Math.abs(val - 1) / maxDev;         // 0..1 share of half-width
+    const w = "calc((50% - 44px) * " + dev + ")";
+    const bar = document.createElement("span");
+    bar.className = "lift-bar " + (val >= 1 ? "pos" : "neg");
+    bar.style.width = w;
+    const v = document.createElement("span");
+    v.className = "lift-val";
+    v.textContent = val.toFixed(2) + "×";
+    if (val >= 1) v.style.left = "calc(50% + " + w + " + 7px)";
+    else v.style.right = "calc(50% + " + w + " + 7px)";
+    track.appendChild(mid);
+    track.appendChild(bar);
+    track.appendChild(v);
+    liftEl.appendChild(lab);
+    liftEl.appendChild(track);
+  }
+
+  // ---------- tooltip ----------
+  const tip = document.getElementById("tip");
+  let cur = null;
+  function show(el, x, y) {
+    tip.textContent = el.getAttribute("data-tip");
+    tip.classList.add("on");
+    const r = tip.getBoundingClientRect();
+    let left = x + 14, top = y + 14;
+    if (left + r.width > innerWidth - 8) left = x - r.width - 10;
+    if (top + r.height > innerHeight - 8) top = y - r.height - 10;
+    tip.style.left = Math.max(8, left) + "px";
+    tip.style.top = Math.max(8, top) + "px";
+  }
+  document.addEventListener("pointermove", e => {
+    const el = e.target.closest("[data-tip]");
+    if (el) { cur = el; show(el, e.clientX, e.clientY); }
+    else if (cur) { cur = null; tip.classList.remove("on"); }
+  });
+  document.addEventListener("focusin", e => {
+    const el = e.target.closest("[data-tip]");
+    if (el) { const r = el.getBoundingClientRect(); show(el, r.left + r.width / 2, r.top); }
+  });
+  document.addEventListener("focusout", () => tip.classList.remove("on"));
+  document.addEventListener("scroll", () => tip.classList.remove("on"), true);
+})();
+</script>
+</body>
+</html>
