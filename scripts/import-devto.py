@@ -92,5 +92,5 @@ def main(art_id, slug):
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
-        sys.exit(__doc__.strip())
+        sys.exit((__doc__ or "").strip())
     main(sys.argv[1], sys.argv[2])
