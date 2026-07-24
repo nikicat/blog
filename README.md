@@ -1,0 +1,109 @@
+# blog
+
+Personal blog — <https://nikicat.github.io/blog/>. Built with [Lume](https://lume.land)
+(Deno) + the [simple-blog theme](https://lume.land/theme/simple-blog/), deployed to
+GitHub Pages, syndicated to dev.to and Medium. The blog is the **canonical origin**;
+everything else is a copy pointing back here.
+
+## Publishing a new article
+
+1. Create `posts/<slug>.md` (the slug becomes the permanent URL `/posts/<slug>/`):
+
+   ```markdown
+   ---
+   title: "Post title"
+   date: 2026-07-24
+   author: Nikolay Bryskin
+   description: "One-sentence summary — used as the feed item description and meta description."
+   image: /uploads/<slug>/cover.png   # optional, becomes the og:image
+   tags:
+     - linux
+   ---
+
+   Opening paragraph.
+
+   <!--more-->
+
+   The rest of the article. Everything above the marker is the excerpt.
+   ```
+
+2. **Images** go into `uploads/<slug>/` in this repo and are referenced root-absolute:
+   `![alt](/uploads/<slug>/img.png)`. Don't hotlink to external hosts (syndicated
+   copies live long) and don't use full `https://nikicat.github.io/...` URLs
+   (breaks when the site moves to a custom domain).
+
+3. **Preview**: `deno task serve` → <http://localhost:3000>. Build only: `deno task build`.
+
+4. **Publish**: commit and push to `main`. GitHub Actions builds and deploys
+   (~1 min). Verify at <https://nikicat.github.io/blog/>.
+
+5. **Syndicate** (after the post is live):
+   - **dev.to** picks the post up automatically via the registered RSS feed
+     (`https://nikicat.github.io/blog/feed.xml`) as a *draft* — review it in the
+     dev.to dashboard and publish. Import loses code-fence language tags; re-add
+     ` ```lang ` hints there. One-time setup lives in dev.to Settings → Extensions →
+     "Publishing to DEV Community from RSS" with "mark canonical" checked.
+   - **Medium** has no RSS import: profile → Stories → **Import a story** → paste the
+     blog post URL. It sets the canonical link and backdates automatically, and
+     copies images to Medium's CDN. Check code blocks after import — Medium mangles
+     them; use gists for anything long.
+
+## How the pipeline works
+
+- **Build**: Lume 3, config in `_config.ts`, theme and Lume pinned via the import map
+  in `deno.json` (no lockfile, no node_modules). Content is `posts/*.md`, output is
+  `_site/` (gitignored).
+- **Deploy**: `.github/workflows/deploy.yml` — setup-deno → `deno task build` →
+  upload `_site` → deploy to Pages. The repo's Pages source is set to
+  **GitHub Actions** (`build_type=workflow`); don't switch it back to branch builds —
+  a legacy Jekyll build of this repo produces a 404 site.
+- **Feeds**: the theme emits `feed.xml` (RSS) and `feed.json` with **full article
+  content** — that's what the dev.to importer consumes.
+
+### Non-obvious bits in `_config.ts`
+
+- **Feed subpath fix**: Lume's feed plugin builds items from pre-layout HTML, which
+  the theme's `base_path` plugin never processes. Root-absolute URLs (`/uploads/...`)
+  would resolve against the origin and silently lose the `/blog` subpath in feed
+  items. The feed `content` override prefixes them; it's a no-op on a root domain.
+- **`feedContent` front matter**: when a post defines it, the feed serves that HTML
+  instead of the page content. Used by interactive posts (below).
+- **Custom domain TODO**: `location` is `https://nikicat.github.io/blog/`. When a
+  custom domain is chosen: update `location`, add a `CNAME` file, set the domain in
+  repo Pages settings. Canonical URLs on dev.to/Medium **freeze at publish time** —
+  copies syndicated before the move keep pointing at the old URLs.
+
+## Interactive / raw-HTML posts
+
+`posts/kilobyte-utxo-set.vto` is a verbatim copy of the standalone interactive page
+([nikicat/kilobyte-utxo-set](https://github.com/nikicat/kilobyte-utxo-set)) with a
+front matter block on top. Recipe for this kind of post:
+
+- Use a `.vto` file with the raw HTML as the body — plain `.html` files are **not**
+  loaded as pages by Lume. Safe as long as the HTML contains no `{{`.
+- `layout:` (empty value) skips the theme layout, so the page ships its own design.
+  Consequences you must handle manually:
+  - inject the Umami `<script>` tag into its `<head>` (no layout ⇒ no `extra_head`);
+  - stub `readingInfo: { minutes: N, words: N }` — the reading-time plugin only
+    processes markdown, and the post-list template requires it;
+  - set `feedContent:` with a teaser so the feed doesn't ship the whole app HTML.
+- The copy does not track its source repo. To resync: fetch the deployed page,
+  re-prepend the front matter block (`git show` this file for the exact shape).
+
+## Importing articles from dev.to
+
+`scripts/import-devto.py <article-id> <slug>` converts a dev.to article into a post:
+fetches `body_markdown` from the public API, strips dev.to front matter, converts
+`{% details %}` liquid tags to `<details>`, downloads every referenced image (and the
+cover) into `uploads/<slug>/`, rewrites the references root-absolute, and writes
+`posts/<slug>.md`. Review the result — particularly the `<!--more-->` placement.
+
+## Analytics
+
+Self-hosted [Umami](https://umami.is): dashboard at <https://nikicat-umami.fly.dev>
+(fly.io apps `nikicat-umami` + `nikicat-umami-db`, region `arn`; fly config in
+`~/src/umami-fly/`, admin credentials in `~/.config/umami-fly-credentials`). The
+tracker tag is injected on every themed page via `extra_head` in `_data.yml`.
+The fly machine suspends when idle — the first visit after a quiet period wakes it
+(~1 s), so very short cold visits may go uncounted. dev.to and Medium copies have
+their own native stats; Umami only sees the origin.

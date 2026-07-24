@@ -7,6 +7,8 @@ const site = lume({
   location: new URL("https://nikicat.github.io/blog/"),
 });
 
+site.ignore("README.md", "scripts");
+
 // The feed plugin builds items from pre-layout content, which the theme's
 // base_path plugin never processes — root-absolute references (/foo.png)
 // would resolve against the origin and lose the /blog subpath. Prefix them
