@@ -37,6 +37,7 @@ My next guess was the GPU. But the tool's verdict column stubbornly read `[OTHER
 
 A 78% busy GPU shouldn't be the bottleneck; esports titles don't need to peg the card to 100% to be GPU-bound.
 
+> [!NOTE]
 > **Excursus: Coarse utilization vs frame-timing**
 > A GPU reading 78% utilization in `nvidia-smi` does not mean it has 22% headroom. Utilization only measures the percentage of sampled time the GPU had *any* work queued. In esports titles, a genuinely bottlenecked GPU often reads 70–85%. To find the true limit, measure the per-frame `GPUBusy` time against total frame time. If the GPU is busy for 15ms of a 16ms frame, it is the bottleneck, regardless of the utilization gauge.
 
@@ -52,6 +53,7 @@ Finally, clean data arrived. At 110 fps, the GPU was busy 80% of the frame, but 
 
 A lingering contradiction: the busiest single logical core sat at only 80% utilization. If the CPU was the limit, why wasn't a core pegged at 100%?
 
+> [!NOTE]
 > **Excursus: CPU Thread Migration**
 > Windows rarely leaves a hot thread on a single core for a full second. The OS scheduler migrates the heavy game thread across different physical cores every few milliseconds to distribute heat. When a monitoring tool samples core utilization over a one-second window, it sees the workload smeared across three or four cores. An 80% reading on the busiest logical core often hides a single thread that is completely saturated.
 
@@ -91,10 +93,72 @@ During the chaotic teamfights where my framerate dropped, the 7700K spent 36% to
 
 The Overwatch working set was spilling out of the 7700K's tiny 8 MB L3 cache and fetching from slow DDR4-2400 system memory. The CPU spent half its time standing still.
 
-![How the 8MB L3 cache spills into slow DDR4-2400 memory during a teamfight, stalling the CPU while IPC drops to roughly 0.5.](/uploads/fpsdoctor/memory-wall.svg)
+<svg id="memwall" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 330" font-family="ui-sans-serif, system-ui, -apple-system, sans-serif" role="img" aria-label="How the 8 MB L3 cache spills into slow DDR4-2400 memory during a teamfight, stalling the CPU while IPC drops to roughly 0.5.">
+  <style>
+    #memwall { --surface-f:#f8fafc; --surface-s:#e2e8f0; --node-f:#ffffff; --node-s:#cbd5e1; --pill-f:#eef2ff; --pill-s:#c7d2fe; --title:#334155; --text:#1e293b; --muted:#64748b; --flow:#94a3b8; --accent-f:#eef2ff; --accent-s:#c7d2fe; --accent-t:#4338ca; --hot:#e11d48; --hot-t:#be123c; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme=light]) #memwall { --surface-f:#16202e; --surface-s:#2c3a4f; --node-f:#0b1220; --node-s:#3b4a61; --pill-f:#26264d; --pill-s:#4b4b8f; --title:#cbd5e1; --text:#e2e8f0; --muted:#8fa3bb; --flow:#64748b; --accent-f:#26264d; --accent-s:#4b4b8f; --accent-t:#c7d2fe; --hot:#fb7185; --hot-t:#fda4af; }
+    }
+    :root[data-theme=dark] #memwall { --surface-f:#16202e; --surface-s:#2c3a4f; --node-f:#0b1220; --node-s:#3b4a61; --pill-f:#26264d; --pill-s:#4b4b8f; --title:#cbd5e1; --text:#e2e8f0; --muted:#8fa3bb; --flow:#64748b; --accent-f:#26264d; --accent-s:#4b4b8f; --accent-t:#c7d2fe; --hot:#fb7185; --hot-t:#fda4af; }
+    #memwall .surface { fill: var(--surface-f); stroke: var(--surface-s); }
+    #memwall .node { fill: var(--node-f); stroke: var(--node-s); }
+    #memwall .pill { fill: var(--pill-f); stroke: var(--pill-s); }
+    #memwall .title { fill: var(--title); font-size: 15px; font-weight: 600; }
+    #memwall .mono { fill: var(--text); font-size: 13px; font-family: ui-monospace, 'Cascadia Code', Menlo, monospace; }
+    #memwall .muted { fill: var(--muted); font-size: 12px; }
+    #memwall .flow { stroke: var(--flow); }
+    #memwall .flowhead { fill: var(--flow); }
+    #memwall .accentbox { fill: var(--accent-f); stroke: var(--accent-s); }
+    #memwall .accenttxt { fill: var(--accent-t); font-size: 14px; font-weight: 600; }
+    #memwall .hot { stroke: var(--hot); }
+    #memwall .hothead { fill: var(--hot); }
+    #memwall .hottxt { fill: var(--hot-t); font-size: 13px; font-weight: 600; }
+  </style>
+  <defs>
+    <marker id="mw-a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="flowhead"/>
+    </marker>
+    <marker id="mw-h" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="hothead"/>
+    </marker>
+  </defs>
+  <!-- CPU package -->
+  <rect x="40" y="44" width="400" height="240" rx="14" class="surface"/>
+  <text x="64" y="73" class="title">Intel i7-7700K — 4 cores, 4.2–4.4 GHz</text>
+  <rect x="70" y="96" width="100" height="34" rx="17" class="pill"/>
+  <text x="120" y="118" text-anchor="middle" class="mono">Core 0</text>
+  <rect x="70" y="142" width="100" height="34" rx="17" class="pill"/>
+  <text x="120" y="164" text-anchor="middle" class="mono">Core 1</text>
+  <rect x="70" y="188" width="100" height="34" rx="17" class="pill"/>
+  <text x="120" y="210" text-anchor="middle" class="mono">Core 2</text>
+  <rect x="70" y="234" width="100" height="34" rx="17" class="pill"/>
+  <text x="120" y="256" text-anchor="middle" class="mono">Core 3</text>
+  <line x1="170" y1="113" x2="264" y2="140" class="flow" stroke-width="1.5" marker-end="url(#mw-a)"/>
+  <line x1="170" y1="159" x2="264" y2="157" class="flow" stroke-width="1.5" marker-end="url(#mw-a)"/>
+  <line x1="170" y1="205" x2="264" y2="173" class="flow" stroke-width="1.5" marker-end="url(#mw-a)"/>
+  <line x1="170" y1="251" x2="264" y2="190" class="flow" stroke-width="1.5" marker-end="url(#mw-a)"/>
+  <rect x="270" y="128" width="140" height="72" rx="10" class="accentbox"/>
+  <text x="340" y="158" text-anchor="middle" class="accenttxt">L3 cache</text>
+  <text x="340" y="180" text-anchor="middle" class="accenttxt">8 MB</text>
+  <!-- system memory -->
+  <rect x="560" y="44" width="280" height="240" rx="14" class="surface"/>
+  <text x="584" y="73" class="title">System memory</text>
+  <rect x="600" y="128" width="200" height="72" rx="10" class="node"/>
+  <text x="700" y="169" text-anchor="middle" class="mono">DDR4-2400</text>
+  <!-- spill path -->
+  <text x="504" y="112" text-anchor="middle" class="muted">during heavy teamfights</text>
+  <text x="504" y="130" text-anchor="middle" class="hottxt">working set spills over</text>
+  <line x1="412" y1="142" x2="596" y2="142" class="hot" stroke-width="2.5" marker-end="url(#mw-h)"/>
+  <line x1="596" y1="186" x2="414" y2="186" class="hot" stroke-width="2" stroke-dasharray="5 5" marker-end="url(#mw-h)"/>
+  <text x="504" y="208" text-anchor="middle" class="hottxt">cores stall, waiting for data</text>
+  <text x="504" y="226" text-anchor="middle" class="muted">hundreds of cycles per miss</text>
+  <!-- measured evidence -->
+  <text x="440" y="315" text-anchor="middle" class="muted" font-family="ui-monospace, 'Cascadia Code', Menlo, monospace">PMU: 36–59% of cycles stalled on DRAM · IPC ≈ 0.5 · 16–28 L3 misses per 1k instructions</text>
+</svg>
 
 The signature was identical whether the game was capped at 60 fps or uncapped at 122 fps. The framerate wasn't pushing the CPU. The sheer memory footprint of the scene was.
 
+> [!NOTE]
 > **Excursus: Memory-stall-bound execution**
 > A CPU limit is rarely about clock speed. In gaming, it is often a memory limit. When a frame requires more data than the L3 cache can hold, the CPU must fetch from RAM, taking hundreds of cycles per miss. During these cycles, the processor halts execution (a memory stall). Overclocking the CPU core frequency does nothing to solve this; the cores simply wait faster.
 > To test your own rig for memory stalls using PresentMon, run `PresentMon.exe --output_stdout` and monitor the `CPUBusy` metric during a framerate drop. If `CPUBusy` is high but overall CPU package utilization is low, cache spilling is the likely culprit.
