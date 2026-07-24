@@ -1,0 +1,16 @@
+lang: en
+
+home:
+  welcome: Hi, I'm Nikolay Bryskin. Notes on systems, Linux, and engineering.
+
+menu_links: []
+extra_head:
+  - '<script defer src="https://nikicat-umami.fly.dev/script.js" data-website-id="2f348616-00b4-43c7-958c-76fcbc78ea5b"></script>'
+
+# Metas plugin https://lume.land/plugins/metas/#description
+metas:
+  site: Nikolay Bryskin
+  description: Notes on systems, Linux, and engineering
+  title: "=title"
+  image: "=image"
+  lang: en

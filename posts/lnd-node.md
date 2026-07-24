@@ -1,11 +1,23 @@
-# How to create lnd node ready for accepting payments
+---
+title: How to create an lnd node ready for accepting payments
+date: 2022-05-03
+author: Nikolay Bryskin
+tags:
+  - bitcoin
+  - lightning
+  - linux
+---
 
 ## Install lnd
+
 ```
 yay -S lnd
 ```
 
+<!--more-->
+
 ## Configure
+
 ```
 mkdir ~/.lnd
 cat <<EOF
@@ -18,6 +30,7 @@ EOF > ~/.lnd/lnd.conf
 ```
 
 ## Create wallet
+
 ```
 lnd &
 lncli create
@@ -26,6 +39,7 @@ kill %1
 ```
 
 ## Setup autounlock and start lnd
+
 ```
 echo "<password-for-the-wallet>" > ~/.lnd/wallet.password
 echo "wallet-unlock-password-file=~/.lnd/wallet.password" >> ~/.lnd/lnd.conf
@@ -33,8 +47,9 @@ lnd &
 ```
 
 ## Obtain inbound liquidity
- - go to https://lnbig.com
- - initiate the payment
- - provide node id `lncli getinfo | jq -r .identity_pubkey`
- - use NodeID@Host:Port to connect to the node `lncli connect <addr>`
- - wait for on-chain confirmation
+
+- go to https://lnbig.com
+- initiate the payment
+- provide node id `lncli getinfo | jq -r .identity_pubkey`
+- use NodeID@Host:Port to connect to the node `lncli connect <addr>`
+- wait for on-chain confirmation

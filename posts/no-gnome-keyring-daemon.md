@@ -1,8 +1,18 @@
-= How to stop gnome-keyring-daemon prompts
+---
+title: How to stop gnome-keyring-daemon prompts
+date: 2022-05-24
+author: Nikolay Bryskin
+tags:
+  - linux
+  - gnome
+---
 
-In Gnome there is gnome-keyring-daemon that should be unlocked to provide access to keyrings. By default it unlocks using login password, 
-but if you use fingerprint or face unlock then it will prompt you to enter password every time any process try to access keyring. 
+In Gnome there is gnome-keyring-daemon that should be unlocked to provide access to keyrings. By default it unlocks using login password,
+but if you use fingerprint or face unlock then it will prompt you to enter password every time any process try to access keyring.
 For my setup it's 6 times after login and 2 times when I start the browser.
+
+<!--more-->
+
 Package removal does not work because it's a dependency of many other packages.
 What actually works is to remove all ways of starting gnome-keyring-daemon like so
 
