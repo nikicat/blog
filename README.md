@@ -15,7 +15,7 @@ everything else is a copy pointing back here.
    date: 2026-07-24
    author: Nikolay Bryskin
    description: "One-sentence summary — used as the feed item description and meta description."
-   image: /uploads/<slug>/cover.png   # optional, becomes the og:image
+   image: /uploads/<slug>/cover.png   # optional cover: hero on the post, list thumbnail, og:image, feed image, dev.to main_image
    tags:
      - linux
    ---
@@ -38,15 +38,19 @@ everything else is a copy pointing back here.
    (~1 min). Verify at <https://zxczxc.dev/>.
 
 5. **Syndicate** (after the post is live):
-   - **dev.to** picks the post up automatically via the registered RSS feed
-     (`https://zxczxc.dev/feed.xml`) as a *draft* — review it in the
-     dev.to dashboard and publish. Import loses code-fence language tags; re-add
-     ` ```lang ` hints there. One-time setup lives in dev.to Settings → Extensions →
-     "Publishing to DEV Community from RSS" with "mark canonical" checked.
+   - **dev.to** (preferred: API) — `scripts/publish-devto.py <slug>` creates a
+     dev.to *draft* with canonical URL, tags, description, and the cover as
+     `main_image`; review and publish in the dev.to dashboard
+     (`--update <article-id>` to push changes later). Key in
+     `~/.config/devto-api-key` or `DEVTO_API_KEY`. Alternative: the RSS feed
+     (`https://zxczxc.dev/feed.xml`) can be registered in dev.to Settings →
+     Extensions ("mark canonical" checked) — but RSS import drops covers and
+     code-fence language tags.
    - **Medium** has no RSS import: profile → Stories → **Import a story** → paste the
      blog post URL. It sets the canonical link and backdates automatically, and
-     copies images to Medium's CDN. Check code blocks after import — Medium mangles
-     them; use gists for anything long.
+     copies images to Medium's CDN — including the cover, which is the first
+     in-body image thanks to the hero. Check code blocks after import — Medium
+     mangles them; use gists for anything long.
 
 ## How the pipeline works
 
@@ -75,6 +79,17 @@ everything else is a copy pointing back here.
   Old `nikicat.github.io/blog/*` URLs 301-redirect. If the domain ever changes,
   remember canonical URLs on dev.to/Medium **freeze at publish time** — copies
   syndicated before a move keep pointing at the old URLs.
+
+## Cover images
+
+The `image:` front matter drives everything: hero under the post title, floated
+thumbnail on the home/archive lists, `og:image`, the feed item image, and
+dev.to's `main_image` (via the publish script). Medium picks it up as the
+featured image because the hero is part of the article body. Implemented by
+locally-shadowed theme templates (`_includes/layouts/post.vto`,
+`_includes/templates/post-list.vto`, `index.vto`) plus CSS in `_data.yml`
+`extra_head` — **shadowed files freeze their copy of the theme**: after a theme
+version bump in `deno.json`, re-diff them against upstream.
 
 ## Interactive / raw-HTML posts
 

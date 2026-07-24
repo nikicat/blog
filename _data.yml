@@ -6,6 +6,13 @@ home:
 menu_links: []
 extra_head:
   - '<script defer src="https://nikicat-umami.fly.dev/script.js" data-website-id="2f348616-00b4-43c7-958c-76fcbc78ea5b"></script>'
+  - |
+    <style>
+      .post-cover { width: 100%; border-radius: 8px; margin: 1.5rem 0 0; }
+      .post-thumb { float: right; width: 10rem; margin: 0.25rem 0 0.75rem 1.25rem; }
+      .post-thumb img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 8px; }
+      @media (max-width: 450px) { .post-thumb { width: 6.5rem; } }
+    </style>
 
 # Metas plugin https://lume.land/plugins/metas/#description
 metas:

@@ -16,6 +16,7 @@ const prefix = site.options.location.pathname.replace(/\/+$/, "");
 site.use(theme({
   feed: {
     items: {
+      image: "=image",
       content: (data) =>
         data.feedContent ??
           String(data.children).replace(/(src|href)="\/(?!\/)/g, `$1="${prefix}/`),

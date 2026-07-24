@@ -1,0 +1,21 @@
+<ul class="postList">
+  {{ for post of postslist }}
+  <li class="post">
+    {{ if post.image }}
+    <a class="post-thumb" href="{{ post.url }}" tabindex="-1" aria-hidden="true"><img src="{{ post.image }}" alt="" loading="lazy"></a>
+    {{ /if }}
+    <h2 class="post-title">
+      <a href="{{ post.url }}" {{ if post.url == url }} aria-current="page"{{ /if }}>
+        {{ post.title || post.url }}
+      </a>
+    </h2>
+
+    {{ include "templates/post-details.vto" {
+      date: post.date,
+      tags: post.tags,
+      author: post.author,
+      readingInfo: post.readingInfo
+    } }}
+  </li>
+  {{ /for }}
+</ul>
