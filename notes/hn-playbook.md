@@ -199,6 +199,43 @@ vote arrow themselves. If a post is unfairly flagged, email
 hn@ycombinator.com — moderators do restore things. Technical first-person
 writing on your own domain is the least-flagged genre on the site.
 
+## 8. Blockchain tech: frame the engineering, not the coin
+
+HN is post-crypto: blockchain is 0.6% of submissions (vs. AI's 25%) and the
+reception is indifference plus residual hostility, with heavy flagging on top
+(survivor rates below overstate the room's friendliness).
+
+| Segment | n | drown ≤2 | hit 100+ |
+|---|---|---|---|
+| All blockchain/crypto | 338 | 44% | 2.07% |
+| Tech content (market/crime/token news removed) | 260 | 50% | 2.31% |
+| Show HN, crypto tech | 23 | 52% | **0.00%** |
+| Site average | 59,711 | 41% | 4.40% |
+
+The window's two biggest "crypto" stories were schadenfreude and a ban
+("Crypto in 2026: Oh, This Is the Bad Place" — 426 pts; "Codeberg Bans
+Cryptocurrency Projects" — 365). The best neutral one (OpenNode, a Bitcoin
+payment processor) managed 114.
+
+Two lessons inside the numbers:
+
+- **The voting-bloc mirage.** Monero/Nostr posts sitting at 30–67 points with
+  zero to two comments are a community upvoting its own — points without
+  conversation, no front page. Don't calibrate against them; that pattern
+  also flirts with the voting-ring detector.
+- **The exception: content that would survive with the coin removed.** A
+  ZK-proof post framed as privacy tech for age verification hit 231; a
+  crypto-datacenters-vs-Texas-grid post hit 154 as an infrastructure story.
+  Blockchain content succeeds exactly when the title reads as cryptography,
+  systems, or measurement first. "Fitting a 12 GB UTXO set into a kilobyte"
+  is a data-structures title; "Running a Bitcoin Lightning node" is a crypto
+  title. Lead with the engineering problem and the numbers; let the coin be
+  the setting, not the subject. And skip Show HN for anything
+  cryptocurrency-adjacent (0 hits in 23 attempts this window).
+
+Caveat: n=260 is thin, and this was a bear-sentiment window ("Bitcoin hits
+20-month low" is in the sample) — the ceiling may be understated.
+
 ## Caveats
 
 - One 60-day window (May 25 – Jul 24, 2026); seasonal effects unknown.
