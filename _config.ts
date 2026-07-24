@@ -5,7 +5,7 @@ const site = lume({
   location: new URL("https://zxczxc.dev/"),
 });
 
-site.ignore("README.md", "scripts");
+site.ignore("README.md", "scripts", "notes");
 
 // The feed plugin builds items from pre-layout content, which the theme's
 // base_path plugin never processes — root-absolute references (/foo.png)
