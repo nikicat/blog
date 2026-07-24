@@ -1,6 +1,6 @@
 # blog
 
-Personal blog — <https://nikicat.github.io/blog/>. Built with [Lume](https://lume.land)
+Personal blog — <https://zxczxc.dev/>. Built with [Lume](https://lume.land)
 (Deno) + the [simple-blog theme](https://lume.land/theme/simple-blog/), deployed to
 GitHub Pages, syndicated to dev.to and Medium. The blog is the **canonical origin**;
 everything else is a copy pointing back here.
@@ -29,17 +29,17 @@ everything else is a copy pointing back here.
 
 2. **Images** go into `uploads/<slug>/` in this repo and are referenced root-absolute:
    `![alt](/uploads/<slug>/img.png)`. Don't hotlink to external hosts (syndicated
-   copies live long) and don't use full `https://nikicat.github.io/...` URLs
-   (breaks when the site moves to a custom domain).
+   copies live long) and don't hardcode full `https://zxczxc.dev/...` URLs
+   (breaks if the site ever moves).
 
 3. **Preview**: `deno task serve` → <http://localhost:3000>. Build only: `deno task build`.
 
 4. **Publish**: commit and push to `main`. GitHub Actions builds and deploys
-   (~1 min). Verify at <https://nikicat.github.io/blog/>.
+   (~1 min). Verify at <https://zxczxc.dev/>.
 
 5. **Syndicate** (after the post is live):
    - **dev.to** picks the post up automatically via the registered RSS feed
-     (`https://nikicat.github.io/blog/feed.xml`) as a *draft* — review it in the
+     (`https://zxczxc.dev/feed.xml`) as a *draft* — review it in the
      dev.to dashboard and publish. Import loses code-fence language tags; re-add
      ` ```lang ` hints there. One-time setup lives in dev.to Settings → Extensions →
      "Publishing to DEV Community from RSS" with "mark canonical" checked.
@@ -64,14 +64,17 @@ everything else is a copy pointing back here.
 
 - **Feed subpath fix**: Lume's feed plugin builds items from pre-layout HTML, which
   the theme's `base_path` plugin never processes. Root-absolute URLs (`/uploads/...`)
-  would resolve against the origin and silently lose the `/blog` subpath in feed
-  items. The feed `content` override prefixes them; it's a no-op on a root domain.
+  would resolve against the origin and silently lose any subpath in feed items.
+  The feed `content` override prefixes them — a no-op at the current root domain,
+  kept so a future move under a path can't silently break feed images again.
 - **`feedContent` front matter**: when a post defines it, the feed serves that HTML
   instead of the page content. Used by interactive posts (below).
-- **Custom domain TODO**: `location` is `https://nikicat.github.io/blog/`. When a
-  custom domain is chosen: update `location`, add a `CNAME` file, set the domain in
-  repo Pages settings. Canonical URLs on dev.to/Medium **freeze at publish time** —
-  copies syndicated before the move keep pointing at the old URLs.
+- **Domain**: `location` is `https://zxczxc.dev/`, served via the Pages custom
+  domain on this repo. DNS is on Cloudflare: apex + `www` CNAME to
+  `nikicat.github.io`, **DNS-only** (proxying breaks GitHub's cert issuance).
+  Old `nikicat.github.io/blog/*` URLs 301-redirect. If the domain ever changes,
+  remember canonical URLs on dev.to/Medium **freeze at publish time** — copies
+  syndicated before a move keep pointing at the old URLs.
 
 ## Interactive / raw-HTML posts
 

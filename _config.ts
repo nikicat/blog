@@ -1,10 +1,8 @@
 import lume from "lume/mod.ts";
 import theme from "theme/mod.ts";
 
-// TODO: switch to the custom domain once decided — canonical URLs on
-// dev.to/Medium will point wherever this was at publish time.
 const site = lume({
-  location: new URL("https://nikicat.github.io/blog/"),
+  location: new URL("https://zxczxc.dev/"),
 });
 
 site.ignore("README.md", "scripts");
