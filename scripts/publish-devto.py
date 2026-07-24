@@ -22,7 +22,7 @@ import urllib.request
 BLOG = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ORIGIN = "https://zxczxc.dev"
 sys.path.insert(0, os.path.join(BLOG, "scripts"))
-from rasterize import png_sibling  # type: ignore  # noqa: E402
+from rasterize import png_from_svg, png_sibling  # type: ignore  # noqa: E402
 
 
 def api_key():
@@ -61,6 +61,18 @@ def parse_post(slug):
         return f"[{alt}({ORIGIN}{path})]({ORIGIN}{full})"
 
     body = re.sub(r"(!\[[^\]]*\])\((/[^)\s]+)\)", img_ref, body)
+
+    # Inline <svg> diagrams: rasterize to a hosted PNG (dev.to strips raw SVG),
+    # mirroring the file-referenced .svg handling above.
+    def inline_svg(m):
+        svg = m.group(0)
+        idm = re.search(r'\bid="([^"]+)"', svg)
+        name = idm.group(1) if idm else f"diagram{m.start()}"
+        altm = re.search(r'aria-label="([^"]*)"', svg)
+        png = png_from_svg(BLOG, f"/uploads/{slug}/{name}", svg)
+        return f"![{altm.group(1) if altm else ''}]({ORIGIN}{png})"
+
+    body = re.sub(r"<svg\b.*?</svg>", inline_svg, body, flags=re.S)
 
     article = {
         "title": field("title"),

@@ -19,7 +19,7 @@ import sys
 BLOG = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ORIGIN = "https://zxczxc.dev"
 sys.path.insert(0, os.path.join(BLOG, "scripts"))
-from rasterize import png_sibling  # type: ignore  # noqa: E402
+from rasterize import png_from_svg, png_sibling  # type: ignore  # noqa: E402
 
 
 def main(slug):
@@ -42,6 +42,26 @@ def main(slug):
         lambda m: f'src="{ORIGIN}{png_sibling(BLOG, m.group(1))}"',
         body,
     )
+
+    # Inline <svg> diagrams (Medium can't host SVG): rasterize each to a
+    # content-hashed PNG, keyed off its id. Render from the *markdown* source,
+    # not the built HTML — Lume's HTML parser lowercases SVG attribute names
+    # (viewBox -> viewbox, markerWidth -> markerwidth), which rsvg-convert
+    # (case-sensitive) then ignores, breaking the render. Sourcing from markdown
+    # also matches the dev.to exporter's hash so they share one PNG.
+    md_svgs = {}
+    for s in re.findall(r"<svg\b.*?</svg>", fm, re.S):
+        idm = re.search(r'\bid="([^"]+)"', s)
+        if idm:
+            md_svgs[idm.group(1)] = s
+
+    def _inline_svg(m):
+        idm = re.search(r'\bid="([^"]+)"', m.group(0))
+        name = idm.group(1) if idm else f"diagram{m.start()}"
+        png = png_from_svg(BLOG, f"/uploads/{slug}/{name}", md_svgs.get(name, m.group(0)))
+        return f'<img src="{ORIGIN}{png}">'
+
+    body = re.sub(r"<svg\b.*?</svg>", _inline_svg, body, flags=re.S)
     body = re.sub(r'src="/', f'src="{ORIGIN}/', body)
     body = re.sub(r'<a href="[^"]*" class="header-anchor">(.*?)</a>', r"\1", body, flags=re.S)
 
