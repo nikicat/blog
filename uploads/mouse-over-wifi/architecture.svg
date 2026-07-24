@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-150 0 1030 444" font-family="ui-sans-serif, system-ui, -apple-system, sans-serif">
+  <style>
+    .surface   { fill: #f8fafc; stroke: #e2e8f0; }
+    .node      { fill: #ffffff; stroke: #cbd5e1; }
+    .pill      { fill: #eef2ff; stroke: #c7d2fe; }
+    .title     { fill: #334155; font-size: 15px; font-weight: 600; }
+    .label     { fill: #1e293b; font-size: 14px; }
+    .mono      { fill: #1e293b; font-size: 13px; font-family: ui-monospace, 'Cascadia Code', Menlo, monospace; }
+    .muted     { fill: #64748b; font-size: 12px; }
+    .flow      { stroke: #94a3b8; }
+    .accent    { stroke: #6366f1; }
+    .accentbox { fill: #eef2ff; stroke: #c7d2fe; }
+    .accenttxt { fill: #4338ca; font-size: 13px; font-weight: 600; }
+    .flowhead   { fill: #94a3b8; }
+    .accenthead { fill: #6366f1; }
+    @media (prefers-color-scheme: dark) {
+      .surface   { fill: #16202e; stroke: #2c3a4f; }
+      .node      { fill: #0b1220; stroke: #3b4a61; }
+      .pill      { fill: #26264d; stroke: #4b4b8f; }
+      .title     { fill: #cbd5e1; }
+      .label     { fill: #e2e8f0; }
+      .mono      { fill: #e2e8f0; }
+      .muted     { fill: #8fa3bb; }
+      .flow      { stroke: #64748b; }
+      .accent    { stroke: #818cf8; }
+      .accentbox { fill: #26264d; stroke: #4b4b8f; }
+      .accenttxt { fill: #c7d2fe; }
+      .flowhead   { fill: #64748b; }
+      .accenthead { fill: #818cf8; }
+    }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="flowhead"/>
+    </marker>
+    <marker id="aa" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="accenthead"/>
+    </marker>
+  </defs>
+
+  <!-- machine boxes -->
+  <rect x="40"  y="48" width="330" height="320" rx="14" class="surface"/>
+  <rect x="510" y="48" width="330" height="320" rx="14" class="surface"/>
+  <text x="64"  y="77" class="title">🖥️ zxc-pc — ARM board</text>
+  <text x="534" y="77" class="title">💻 laptop</text>
+
+  <!-- physical mouse, outside the machine -->
+  <rect x="-140" y="88" width="110" height="44" rx="22" class="pill"/>
+  <text x="-85" y="115" text-anchor="middle" class="label">🖱️ mouse</text>
+  <line x1="-30" y1="110" x2="94" y2="110" class="flow" stroke-width="1.5" stroke-dasharray="4 4" marker-end="url(#a)"/>
+
+  <!-- left column: down -->
+  <rect x="100" y="88" width="210" height="44" rx="22" class="pill"/>
+  <text x="205" y="115" text-anchor="middle" class="label">Logitech receiver</text>
+
+  <line x1="205" y1="132" x2="205" y2="176" class="flow" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <rect x="100" y="183" width="210" height="44" rx="8" class="node"/>
+  <text x="205" y="210" text-anchor="middle" class="mono">/dev/input/event8</text>
+
+  <line x1="205" y1="227" x2="205" y2="271" class="flow" stroke-width="1.5" marker-end="url(#a)"/>
+  <text x="217" y="254" class="muted">exclusive grab</text>
+
+  <rect x="100" y="278" width="210" height="44" rx="8" class="node"/>
+  <text x="205" y="305" text-anchor="middle" class="mono">netevent cat</text>
+
+  <line x1="205" y1="322" x2="205" y2="350" class="flow" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <!-- right column: up -->
+  <rect x="570" y="280" width="210" height="40" rx="8" class="node"/>
+  <text x="675" y="305" text-anchor="middle" class="mono">socat</text>
+
+  <line x1="675" y1="280" x2="675" y2="261" class="flow" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <rect x="570" y="216" width="210" height="40" rx="8" class="node"/>
+  <text x="675" y="241" text-anchor="middle" class="mono">netevent create</text>
+
+  <line x1="675" y1="216" x2="675" y2="198" class="flow" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <rect x="570" y="153" width="210" height="40" rx="8" class="node"/>
+  <text x="675" y="178" text-anchor="middle" class="mono">/dev/uinput</text>
+
+  <line x1="675" y1="153" x2="675" y2="135" class="flow" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <rect x="570" y="90" width="210" height="40" rx="20" class="pill"/>
+  <text x="675" y="115" text-anchor="middle" class="label">🖱️ virtual mouse</text>
+
+  <line x1="675" y1="354" x2="675" y2="324" class="flow" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <!-- tailscale interfaces straddling the machine borders -->
+  <rect x="150" y="354" width="110" height="28" rx="14" class="node"/>
+  <text x="205" y="373" text-anchor="middle" class="mono">tailscale0</text>
+  <rect x="620" y="354" width="110" height="28" rx="14" class="node"/>
+  <text x="675" y="373" text-anchor="middle" class="mono">tailscale0</text>
+
+  <!-- port-to-port U link -->
+  <path d="M 205 382 L 205 400 Q 205 412 217 412 L 663 412 Q 675 412 675 400 L 675 384"
+        fill="none" class="accent" stroke-width="2.5" marker-end="url(#aa)"/>
+  <rect x="390" y="398" width="100" height="28" rx="14" class="accentbox"/>
+  <text x="440" y="417" text-anchor="middle" class="accenttxt">tcp 8763</text>
+</svg>
