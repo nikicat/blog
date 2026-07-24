@@ -9,7 +9,7 @@ Reads posts/<slug>.md, sends it with canonical_url pointing at the blog and
 main_image set from the `image` front matter (as an absolute URL). Articles are
 created unpublished — review and publish them in the dev.to dashboard.
 
-API key: ~/.config/devto-api-key or DEVTO_API_KEY env
+API key: ~/.config/devto/api_key or DEVTO_API_KEY env
 (generate at https://dev.to/settings/extensions).
 """
 import json
@@ -26,11 +26,11 @@ ORIGIN = "https://zxczxc.dev"
 def api_key():
     key = os.environ.get("DEVTO_API_KEY")
     if not key:
-        path = os.path.expanduser("~/.config/devto-api-key")
+        path = os.path.expanduser("~/.config/devto/api_key")
         if os.path.exists(path):
             key = open(path).read().strip()
     if not key:
-        sys.exit("no API key: set DEVTO_API_KEY or write ~/.config/devto-api-key")
+        sys.exit("no API key: set DEVTO_API_KEY or write ~/.config/devto/api_key")
     return key
 
 
@@ -74,13 +74,22 @@ def main():
     slug = args[0]
     update_id = args[2] if len(args) == 3 and args[1] == "--update" else None
 
-    payload = json.dumps({"article": parse_post(slug)}).encode()
+    article = parse_post(slug)
+    if update_id:
+        # never touch the published state of an existing article
+        del article["published"]
+    payload = json.dumps({"article": article}).encode()
     url = "https://dev.to/api/articles" + (f"/{update_id}" if update_id else "")
     req = urllib.request.Request(
         url,
         data=payload,
         method="PUT" if update_id else "POST",
-        headers={"api-key": api_key(), "Content-Type": "application/json"},
+        headers={
+            "api-key": api_key(),
+            "Content-Type": "application/json",
+            # dev.to 403s the default Python-urllib user agent
+            "User-Agent": "zxczxc.dev publish script",
+        },
     )
     try:
         with urllib.request.urlopen(req) as r:
