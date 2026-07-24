@@ -56,7 +56,7 @@ def parse_post(slug):
         src, dst = BLOG + path, BLOG + png
         if not os.path.exists(dst) or os.path.getmtime(dst) < os.path.getmtime(src):
             subprocess.run(
-                ["rsvg-convert", "--zoom", "2", "--background-color", "white", src, "-o", dst],
+                ["rsvg-convert", "--zoom", "4", "--background-color", "white", src, "-o", dst],
                 check=True,
             )
             print(f"rasterized {png} — commit and push it before the article goes live")
