@@ -49,11 +49,14 @@ everything else is a copy pointing back here.
      (`https://zxczxc.dev/feed.xml`) can be registered in dev.to Settings →
      Extensions ("mark canonical" checked) — but RSS import drops covers and
      code-fence language tags.
-   - **Medium** has no RSS import: profile → Stories → **Import a story** → paste the
-     blog post URL. It sets the canonical link and backdates automatically, and
-     copies images to Medium's CDN — including the cover, which is the first
-     in-body image thanks to the hero. Check code blocks after import — Medium
-     mangles them; use gists for anything long.
+   - **Medium** (no API; import + paste-over): first **Import a story** at
+     <https://medium.com/p/import> with the blog post URL — only the importer can
+     set the canonical link and backdate, but it mangles images and code. Then run
+     `scripts/medium-paste.py <slug>`, open the imported draft, `Ctrl+A`,
+     `Delete`, `Ctrl+V`: the clipboard payload rebuilds the whole story from the
+     built HTML — title in the title slot, cover as lead/featured image, SVG
+     diagrams swapped for their PNG siblings, code blocks intact (Medium re-hosts
+     the images asynchronously). Review, add topics, publish.
 
 ## How the pipeline works
 

@@ -15,13 +15,14 @@ API key: ~/.config/devto/api_key or DEVTO_API_KEY env
 import json
 import os
 import re
-import subprocess
 import sys
 import urllib.error
 import urllib.request
 
 BLOG = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ORIGIN = "https://zxczxc.dev"
+sys.path.insert(0, os.path.join(BLOG, "scripts"))
+from rasterize import png_sibling  # type: ignore  # noqa: E402
 
 
 def api_key():
@@ -49,29 +50,6 @@ def parse_post(slug):
     tags = re.findall(r"^  - (\S+)$", fm, re.M)
     body = body.replace("<!--more-->\n\n", "").replace("<!--more-->", "")
 
-    # dev.to can't serve SVG and snapshots remote images into its own S3 at
-    # save time — swap in a PNG sibling whose name hashes the SVG content, so
-    # any change produces a new URL and forces dev.to to re-ingest.
-    ZOOM = "4"
-    RASTER_REV = "2"  # bump to force new URLs when dev.to has cached a bad fetch
-
-    def png_sibling(path):
-        import hashlib
-        svg = open(BLOG + path, "rb").read()
-        digest = hashlib.sha256(svg + ZOOM.encode() + RASTER_REV.encode()).hexdigest()[:8]
-        png = f"{path[:-4]}.{digest}.png"
-        dst = BLOG + png
-        if not os.path.exists(dst):
-            for stale in os.listdir(os.path.dirname(dst)):
-                if re.fullmatch(re.escape(os.path.basename(path)[:-4]) + r"\.[0-9a-f]{8}\.png", stale):
-                    os.remove(os.path.join(os.path.dirname(dst), stale))
-            subprocess.run(
-                ["rsvg-convert", "--zoom", ZOOM, "--background-color", "white", BLOG + path, "-o", dst],
-                check=True,
-            )
-            print(f"rasterized {png} — commit and push it BEFORE running this script again")
-        return png
-
     # dev.to needs absolute image URLs. It serves all inline images through a
     # width=800 proxy with no full-res click-through, so wrap every image in a
     # link to the original on the origin (the SVG itself for rasterized ones).
@@ -79,7 +57,7 @@ def parse_post(slug):
         alt, path = m.group(1), m.group(2)
         full = path
         if path.endswith(".svg"):
-            path = png_sibling(path)
+            path = png_sibling(BLOG, path)
         return f"[{alt}({ORIGIN}{path})]({ORIGIN}{full})"
 
     body = re.sub(r"(!\[[^\]]*\])\((/[^)\s]+)\)", img_ref, body)
