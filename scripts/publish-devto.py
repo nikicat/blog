@@ -49,17 +49,26 @@ def parse_post(slug):
     tags = re.findall(r"^  - (\S+)$", fm, re.M)
     body = body.replace("<!--more-->\n\n", "").replace("<!--more-->", "")
 
-    # dev.to's image proxy can't serve SVG — swap in a PNG sibling,
-    # generating it with rsvg-convert when missing or stale
+    # dev.to can't serve SVG and snapshots remote images into its own S3 at
+    # save time — swap in a PNG sibling whose name hashes the SVG content, so
+    # any change produces a new URL and forces dev.to to re-ingest.
+    ZOOM = "4"
+
     def png_sibling(path):
-        png = path[:-4] + ".png"
-        src, dst = BLOG + path, BLOG + png
-        if not os.path.exists(dst) or os.path.getmtime(dst) < os.path.getmtime(src):
+        import hashlib
+        svg = open(BLOG + path, "rb").read()
+        digest = hashlib.sha256(svg + ZOOM.encode()).hexdigest()[:8]
+        png = f"{path[:-4]}.{digest}.png"
+        dst = BLOG + png
+        if not os.path.exists(dst):
+            for stale in os.listdir(os.path.dirname(dst)):
+                if re.fullmatch(re.escape(os.path.basename(path)[:-4]) + r"\.[0-9a-f]{8}\.png", stale):
+                    os.remove(os.path.join(os.path.dirname(dst), stale))
             subprocess.run(
-                ["rsvg-convert", "--zoom", "4", "--background-color", "white", src, "-o", dst],
+                ["rsvg-convert", "--zoom", ZOOM, "--background-color", "white", BLOG + path, "-o", dst],
                 check=True,
             )
-            print(f"rasterized {png} — commit and push it before the article goes live")
+            print(f"rasterized {png} — commit and push it BEFORE running this script again")
         return png
 
     # dev.to needs absolute image URLs
