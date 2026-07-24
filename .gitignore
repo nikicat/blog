@@ -3,3 +3,4 @@ _cache
 .env
 __pycache__/
 *.har
+.playwright-mcp/
