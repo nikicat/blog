@@ -30,7 +30,8 @@ everything else is a copy pointing back here.
 2. **Images** go into `uploads/<slug>/` in this repo and are referenced root-absolute:
    `![alt](/uploads/<slug>/img.png)`. Don't hotlink to external hosts (syndicated
    copies live long) and don't hardcode full `https://zxczxc.dev/...` URLs
-   (breaks if the site ever moves).
+   (breaks if the site ever moves). For SVG diagrams and dark-mode rules see
+   **Diagrams and article styling** below.
 
 3. **Preview**: `deno task serve` → <http://localhost:3000>. Build only: `deno task build`.
 
@@ -96,6 +97,62 @@ locally-shadowed theme templates (`_includes/layouts/post.vto`,
 `_includes/templates/post-list.vto`, `index.vto`) plus CSS in `_data.yml`
 `extra_head` — **shadowed files freeze their copy of the theme**: after a theme
 version bump in `deno.json`, re-diff them against upstream.
+
+## Diagrams and article styling
+
+- **Dark mode is a manual toggle, not just a media query.** An inline script in the
+  navbar sets `data-theme` on `<html>` (initialized from `prefers-color-scheme`,
+  persisted in `localStorage`, flipped by the ◐ button), and the design-system CSS
+  keys off `[data-theme=dark]`. Anything embedded in an article must look right
+  under *both* mechanisms — a visitor's toggle can disagree with their OS.
+
+- **Hand-author SVG diagrams in the house style**; don't ship mermaid-cli renders.
+  Mermaid's default theme uses near-black strokes that vanish on the dark
+  background, `foreignObject` labels, and its own fonts. A ```` ```mermaid ````
+  fence isn't rendered at all (no plugin) — it ships as a literal code block.
+  Reference implementations of the shared palette (slate surfaces and labels,
+  indigo accent, rose "hot path", light + dark values for every class):
+  - `uploads/mouse-over-wifi/architecture.svg` — standalone file, `<img>`-embedded;
+  - the inline `<svg id="memwall">` in `posts/fpsdoctor.md` — CSS-variable themed.
+
+  Copy the `<style>` block from either as the starting point.
+
+- **Two ways to embed, with a real trade-off:**
+  - *`<img>`-embedded file* in `uploads/<slug>/`: theme it with
+    `@media (prefers-color-scheme: dark)` inside the SVG. An `<img>` cannot see
+    `data-theme`, so the palette is wrong for visitors whose toggle disagrees
+    with their OS — the price of simplicity. Syndication handles these
+    automatically (the scripts swap `.svg` refs for `rsvg-convert`ed PNG
+    siblings; rsvg doesn't match the media query, so PNGs come out light-mode).
+  - *Inline `<svg>` in the `.md`* (raw HTML block): follows the toggle
+    correctly. Rules learned the hard way:
+    - the opening `<svg ...>` tag must sit on one line and the element must
+      contain **no blank lines** — markdown-it ends a raw-HTML block at the
+      first blank line and markdown-parses the rest;
+    - the SVG joins the page DOM: scope every style rule under the svg's unique
+      `#id` (a bare `.title { font-size: … }` leaks onto page elements) and
+      prefix `defs`/marker ids to avoid collisions;
+    - drive colors through CSS variables set in three rule sets: light defaults
+      on `#id`; dark under
+      `@media (prefers-color-scheme: dark) { :root:not([data-theme=light]) #id }`
+      (OS-dark and no-JS readers); dark again under `:root[data-theme=dark] #id`
+      (manual toggle) — the explicit toggle must win in both directions;
+    - use `role="img"` + `aria-label` (inline SVG has no alt text);
+    - **syndication caveat**: `publish-devto.py`/`medium-paste.py` only swap
+      *file* SVG references — inline `<svg>` passes through raw and dev.to/Medium
+      strip it. For posts you plan to syndicate, prefer the `<img>` route or plan
+      a manual PNG replacement in the copy.
+
+- **Callouts**: GitHub alert syntax is rendered by the markdown pipeline and styled
+  by the design system in both themes — `> [!NOTE]` / `[!TIP]` / `[!IMPORTANT]` /
+  `[!WARNING]` / `[!CAUTION]` as the first line of a blockquote, body on the
+  following `>` lines. Use these instead of bold-prefixed plain blockquotes.
+
+- **Verify both themes before pushing**: `deno task serve`, check light, then flip
+  with the ◐ button (or `document.documentElement.dataset.theme = "dark"` in the
+  console) and check again. Note headless `chromium --force-dark-mode` does *not*
+  flip `prefers-color-scheme` — drive a real browser (e.g. Playwright) to
+  screenshot dark mode.
 
 ## Interactive / raw-HTML posts
 
