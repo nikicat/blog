@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 200" font-family="ui-sans-serif, system-ui, -apple-system, sans-serif">
+  <style>
+    .surface   { fill: #f8fafc; stroke: #e2e8f0; }
+    .node      { fill: #ffffff; stroke: #cbd5e1; }
+    .title     { fill: #334155; font-size: 15px; font-weight: 600; }
+    .lane      { fill: #64748b; font-size: 12px; font-weight: 600; }
+    .label     { fill: #1e293b; font-size: 13px; }
+    .mono      { fill: #1e293b; font-size: 12px; font-family: ui-monospace, 'Cascadia Code', Menlo, monospace; }
+    .muted     { fill: #64748b; font-size: 12px; }
+    .flow      { stroke: #94a3b8; fill: none; }
+    .flowhead  { fill: #94a3b8; }
+    .badbox    { fill: #fef2f2; stroke: #fecaca; }
+    .badtxt    { fill: #b91c1c; font-size: 12px; font-family: ui-monospace, Menlo, monospace; }
+    .okbox     { fill: #ecfdf5; stroke: #a7f3d0; }
+    .oktxt     { fill: #047857; font-size: 12px; font-family: ui-monospace, Menlo, monospace; }
+    .emptybox  { fill: none; stroke: #cbd5e1; stroke-dasharray: 5 4; }
+    .accentbox { fill: #eef2ff; stroke: #c7d2fe; }
+    .accenttxt { fill: #4338ca; font-size: 13px; font-weight: 600; }
+    @media (prefers-color-scheme: dark) {
+      .surface   { fill: #16202e; stroke: #2c3a4f; }
+      .node      { fill: #0b1220; stroke: #3b4a61; }
+      .title     { fill: #cbd5e1; }
+      .lane      { fill: #8fa3bb; }
+      .label     { fill: #e2e8f0; }
+      .mono      { fill: #e2e8f0; }
+      .muted     { fill: #8fa3bb; }
+      .flow      { stroke: #64748b; }
+      .flowhead  { fill: #64748b; }
+      .badbox    { fill: #2a1618; stroke: #7f2b31; }
+      .badtxt    { fill: #fca5a5; }
+      .okbox     { fill: #0f2a22; stroke: #2f6f5a; }
+      .oktxt     { fill: #6ee7b7; }
+      .emptybox  { stroke: #3b4a61; }
+      .accentbox { fill: #26264d; stroke: #4b4b8f; }
+      .accenttxt { fill: #c7d2fe; }
+    }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="flowhead"/>
+    </marker>
+  </defs>
+  <text x="20" y="26" class="title">Why the number moves at all</text>
+  <rect x="20" y="62" width="150" height="46" rx="8" class="node"/>
+  <text x="95" y="81.5" class="mono" text-anchor="middle">poll: 3860 mV</text>
+  <text x="95" y="96.5" class="mono" text-anchor="middle">changed</text>
+  <rect x="192" y="62" width="150" height="46" rx="8" class="accentbox"/>
+  <text x="267" y="81.5" class="accenttxt" text-anchor="middle">unsolicited</text>
+  <text x="267" y="96.5" class="accenttxt" text-anchor="middle">HID++ event</text>
+  <rect x="364" y="62" width="150" height="46" rx="8" class="node"/>
+  <text x="439" y="81.5" class="mono" text-anchor="middle">hid-logitech-hidpp</text>
+  <text x="439" y="96.5" class="mono" text-anchor="middle">re-reads</text>
+  <rect x="536" y="62" width="150" height="46" rx="8" class="node"/>
+  <text x="611" y="81.5" class="mono" text-anchor="middle">power_supply</text>
+  <text x="611" y="96.5" class="mono" text-anchor="middle">uevent</text>
+  <rect x="708" y="62" width="150" height="46" rx="8" class="accentbox"/>
+  <text x="783" y="81.5" class="accenttxt" text-anchor="middle">UPower → panel</text>
+  <text x="783" y="96.5" class="accenttxt" text-anchor="middle">60%</text>
+  <path d="M170,85 H188" class="flow" marker-end="url(#a)"/>
+  <path d="M342,85 H360" class="flow" marker-end="url(#a)"/>
+  <path d="M514,85 H532" class="flow" marker-end="url(#a)"/>
+  <path d="M686,85 H704" class="flow" marker-end="url(#a)"/>
+  <text x="440" y="150" class="muted" text-anchor="middle">An unchanged reading sends nothing. Without this event the driver keeps its cached</text>
+  <text x="440" y="168" class="muted" text-anchor="middle">value and the panel shows the probe-time number forever.</text>
+</svg>

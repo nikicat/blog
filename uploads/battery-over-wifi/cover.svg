@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#243047"/>
+      <stop offset="1" stop-color="#161f30"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.55" r="0.5">
+      <stop offset="0" stop-color="#6366f1" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#6366f1" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="charge" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#4f46e5"/>
+      <stop offset="1" stop-color="#818cf8"/>
+    </linearGradient>
+    <!-- the mouse body, reused as outline and as clip for the charge level -->
+    <path id="body" d="M470,150 C560,150 620,250 620,370 C620,500 555,560 470,560 C385,560 320,500 320,370 C320,250 380,150 470,150 Z"/>
+    <clipPath id="bodyclip"><use href="#body"/></clipPath>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <ellipse cx="470" cy="360" rx="420" ry="330" fill="url(#glow)"/>
+
+  <!-- charge level: 88% of the body height, filled from the bottom -->
+  <g clip-path="url(#bodyclip)">
+    <rect x="300" y="199" width="340" height="380" fill="url(#charge)"/>
+    <rect x="300" y="199" width="340" height="6" fill="#c7d2fe" opacity="0.9"/>
+  </g>
+
+  <!-- body outline, button split, scroll wheel -->
+  <use href="#body" fill="none" stroke="#e2e8f0" stroke-width="12"/>
+  <path d="M470,152 V300" stroke="#e2e8f0" stroke-width="10" fill="none" opacity="0.85"/>
+  <rect x="452" y="196" width="36" height="76" rx="18" fill="#161f30" stroke="#e2e8f0" stroke-width="10"/>
+
+  <!-- the charge, arriving over the air -->
+  <g fill="none" stroke="#818cf8" stroke-linecap="round" stroke-width="18">
+    <path d="M700,455 A150,150 0 0 1 700,265" opacity="0.35"/>
+    <path d="M782,495 A240,240 0 0 1 782,225" opacity="0.55"/>
+    <path d="M864,535 A330,330 0 0 1 864,185" opacity="0.8"/>
+  </g>
+  <circle cx="1010" cy="360" r="26" fill="#c7d2fe"/>
+</svg>

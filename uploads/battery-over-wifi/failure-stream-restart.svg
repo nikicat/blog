@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 880 276" font-family="ui-sans-serif, system-ui, -apple-system, sans-serif">
+  <style>
+    .surface   { fill: #f8fafc; stroke: #e2e8f0; }
+    .node      { fill: #ffffff; stroke: #cbd5e1; }
+    .title     { fill: #334155; font-size: 15px; font-weight: 600; }
+    .lane      { fill: #64748b; font-size: 12px; font-weight: 600; }
+    .label     { fill: #1e293b; font-size: 13px; }
+    .mono      { fill: #1e293b; font-size: 12px; font-family: ui-monospace, 'Cascadia Code', Menlo, monospace; }
+    .muted     { fill: #64748b; font-size: 12px; }
+    .flow      { stroke: #94a3b8; fill: none; }
+    .flowhead  { fill: #94a3b8; }
+    .badbox    { fill: #fef2f2; stroke: #fecaca; }
+    .badtxt    { fill: #b91c1c; font-size: 12px; font-family: ui-monospace, Menlo, monospace; }
+    .okbox     { fill: #ecfdf5; stroke: #a7f3d0; }
+    .oktxt     { fill: #047857; font-size: 12px; font-family: ui-monospace, Menlo, monospace; }
+    .emptybox  { fill: none; stroke: #cbd5e1; stroke-dasharray: 5 4; }
+    .accentbox { fill: #eef2ff; stroke: #c7d2fe; }
+    .accenttxt { fill: #4338ca; font-size: 13px; font-weight: 600; }
+    @media (prefers-color-scheme: dark) {
+      .surface   { fill: #16202e; stroke: #2c3a4f; }
+      .node      { fill: #0b1220; stroke: #3b4a61; }
+      .title     { fill: #cbd5e1; }
+      .lane      { fill: #8fa3bb; }
+      .label     { fill: #e2e8f0; }
+      .mono      { fill: #e2e8f0; }
+      .muted     { fill: #8fa3bb; }
+      .flow      { stroke: #64748b; }
+      .flowhead  { fill: #64748b; }
+      .badbox    { fill: #2a1618; stroke: #7f2b31; }
+      .badtxt    { fill: #fca5a5; }
+      .okbox     { fill: #0f2a22; stroke: #2f6f5a; }
+      .oktxt     { fill: #6ee7b7; }
+      .emptybox  { stroke: #3b4a61; }
+      .accentbox { fill: #26264d; stroke: #4b4b8f; }
+      .accenttxt { fill: #c7d2fe; }
+    }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="flowhead"/>
+    </marker>
+  </defs>
+  <text x="20" y="26" class="title">The netevent stream drops</text>
+  <path d="M300,48 V258" class="emptybox" stroke-dasharray="4 4"/>
+  <text x="306" y="44" class="muted">16:57:50</text>
+  <path d="M560,48 V258" class="emptybox" stroke-dasharray="4 4"/>
+  <text x="566" y="44" class="muted">16:57:52</text>
+  <text x="430" y="44" class="muted" text-anchor="middle">2 s</text>
+  <text x="20" y="70" class="lane">zxc-mouse.service</text>
+  <rect x="20" y="78" width="270" height="38" rx="8" class="okbox"/>
+  <text x="155" y="101" class="oktxt" text-anchor="middle">active</text>
+  <rect x="310" y="78" width="240" height="38" rx="8" class="badbox"/>
+  <text x="430" y="93.5" class="badtxt" text-anchor="middle">stream dropped</text>
+  <text x="430" y="108.5" class="badtxt" text-anchor="middle">restart job scheduled</text>
+  <rect x="570" y="78" width="290" height="38" rx="8" class="okbox"/>
+  <text x="715" y="101" class="oktxt" text-anchor="middle">active</text>
+  <text x="20" y="136" class="lane">zxc-mouse-battery.service</text>
+  <rect x="20" y="144" width="270" height="38" rx="8" class="okbox"/>
+  <text x="155" y="167" class="oktxt" text-anchor="middle">active</text>
+  <rect x="310" y="144" width="240" height="38" rx="8" class="emptybox"/>
+  <text x="430" y="167" class="muted" text-anchor="middle">stopped by BindsTo=</text>
+  <rect x="570" y="144" width="290" height="38" rx="8" class="okbox"/>
+  <text x="715" y="159.5" class="oktxt" text-anchor="middle">started by Wants=</text>
+  <text x="715" y="174.5" class="oktxt" text-anchor="middle">new hidpp_battery_N</text>
+  <text x="20" y="212" class="lane">Settings → Power</text>
+  <rect x="20" y="220" width="270" height="36" rx="8" class="accentbox"/>
+  <text x="155" y="242" class="accenttxt" text-anchor="middle">mouse — 88%</text>
+  <rect x="310" y="220" width="240" height="36" rx="8" class="emptybox"/>
+  <text x="430" y="242" class="muted" text-anchor="middle">— gone —</text>
+  <rect x="570" y="220" width="290" height="36" rx="8" class="accentbox"/>
+  <text x="715" y="242" class="accenttxt" text-anchor="middle">mouse — 88%</text>
+</svg>
