@@ -26,6 +26,8 @@ that isn't there.
 
 <style>
 .post-body p, .post-body li { position: relative; }
+.post-body img[src$=".svg"] { --w: min(1120px, calc(100% + 20rem), 96vw); display: block; width: var(--w); max-width: none; margin-inline: calc((100% - var(--w)) / 2); }
+@media (max-width: 760px) { .post-body p:has(> img[src$=".svg"]) { overflow-x: auto; } .post-body img[src$=".svg"] { width: auto; min-width: 900px; margin-inline: 0; } }
 .tgloss { border-bottom: 1px dotted currentColor; cursor: help; outline: none; }
 .tgloss > .tgloss-b { display: none; position: absolute; left: 0; margin-top: 1.6em; z-index: 30; width: min(30rem, 100%); padding: .7rem .85rem; border-radius: .5rem; font-size: .85rem; line-height: 1.5; font-weight: 400; font-style: normal; text-align: left; white-space: normal; background: #fff; color: #1e293b; border: 1px solid #cbd5e1; box-shadow: 0 6px 24px rgba(15,23,42,.16); }
 .tgloss:hover > .tgloss-b, .tgloss:focus > .tgloss-b, .tgloss:focus-within > .tgloss-b { display: block; }
