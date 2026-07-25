@@ -25,25 +25,26 @@ that isn't there.
 <!--more-->
 
 <style>
-.post-body p, .post-body li { position: relative; }
 .post-body img[src$=".svg"] { --w: min(1120px, calc(100% + 20rem), 96vw); display: block; width: var(--w); max-width: none; margin-inline: calc((100% - var(--w)) / 2); }
 @media (max-width: 760px) { .post-body p:has(> img[src$=".svg"]) { overflow-x: auto; } .post-body img[src$=".svg"] { width: auto; min-width: 900px; margin-inline: 0; } }
-.tgloss { border-bottom: 1px dotted currentColor; cursor: help; outline: none; }
-.tgloss > .tgloss-b { display: none; position: absolute; left: 0; margin-top: 1.6em; z-index: 30; width: min(30rem, 100%); padding: .7rem .85rem; border-radius: .5rem; font-size: .85rem; line-height: 1.5; font-weight: 400; font-style: normal; text-align: left; white-space: normal; background: #fff; color: #1e293b; border: 1px solid #cbd5e1; box-shadow: 0 6px 24px rgba(15,23,42,.16); }
-.tgloss:hover > .tgloss-b, .tgloss:focus > .tgloss-b, .tgloss:focus-within > .tgloss-b { display: block; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme=light]) .tgloss > .tgloss-b { background: #0b1220; color: #e2e8f0; border-color: #3b4a61; box-shadow: 0 6px 24px rgba(0,0,0,.5); } }
-:root[data-theme=dark] .tgloss > .tgloss-b { background: #0b1220; color: #e2e8f0; border-color: #3b4a61; box-shadow: 0 6px 24px rgba(0,0,0,.5); }
+.tgloss { font: inherit; color: inherit; background: none; border: 0; padding: 0; margin: 0; cursor: pointer; text-decoration: underline dotted; text-underline-offset: .22em; text-decoration-thickness: 1px; }
+.tgloss:hover, .tgloss:focus-visible { text-decoration-style: solid; }
+.tgloss-b:popover-open { display: block; width: min(32rem, 92vw); padding: .75rem .9rem; border-radius: .5rem; font-size: .9rem; line-height: 1.5; text-align: left; background: #fff; color: #1e293b; border: 1px solid #cbd5e1; box-shadow: 0 8px 30px rgba(15,23,42,.2); }
+.tgloss-b { position: fixed; inset: auto; bottom: 1.5rem; left: 50%; translate: -50% 0; margin: 0; }
+@supports (position-area: block-end span-inline-end) { .tgloss-b { position: absolute; position-area: block-end span-inline-end; position-try-fallbacks: flip-block, flip-inline; bottom: auto; left: auto; translate: none; margin-block: .35rem; } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme=light]) .tgloss-b:popover-open { background: #0b1220; color: #e2e8f0; border-color: #3b4a61; box-shadow: 0 8px 30px rgba(0,0,0,.55); } }
+:root[data-theme=dark] .tgloss-b:popover-open { background: #0b1220; color: #e2e8f0; border-color: #3b4a61; box-shadow: 0 8px 30px rgba(0,0,0,.55); }
 </style>
 
 Worse, nothing on the desk can see it. The ARM board's vendor kernel is
-built without <span class="tgloss" tabindex="0"><code>CONFIG_HID_LOGITECH</code><span class="tgloss-b">Kernel build option that pulls in the Logitech HID drivers. Distributions enable it; vendor board kernels often don't, and the receiver then falls back to <code>hid-generic</code>, which can move a cursor and nothing else. <a href="https://cateee.net/lkddb/web-lkddb/HID_LOGITECH.html">LKDDb entry</a></span></span>:
+built without <button type="button" class="tgloss" popovertarget="g1" style="anchor-name:--g1"><code>CONFIG_HID_LOGITECH</code></button><span popover id="g1" class="tgloss-b" style="position-anchor:--g1">Kernel build option that pulls in the Logitech HID drivers. Distributions enable it; vendor board kernels often don't, and the receiver then falls back to <code>hid-generic</code>, which can move a cursor and nothing else. <a href="https://cateee.net/lkddb/web-lkddb/HID_LOGITECH.html">LKDDb entry</a></span>:
 
 ```console
 $ zgrep HID_LOGITECH /proc/config.gz
 # CONFIG_HID_LOGITECH is not set
 ```
 
-So there is no <span class="tgloss" tabindex="0"><code>hidpp</code><span class="tgloss-b">Short for HID++, Logitech's request/response protocol carried inside two vendor-defined HID reports. Features are addressed by 16-bit id — <code>0x1001</code> is battery voltage — which you resolve to a runtime index by asking feature <code>0x0000</code> first. <a href="https://wiki.archlinux.org/title/Logitech_Unifying_Receiver">Arch Wiki</a></span></span> driver there, no <span class="tgloss" tabindex="0"><code>power_supply</code><span class="tgloss-b">The kernel class every battery and charger registers with, surfacing as <code>/sys/class/power_supply/*</code>. The <code>scope=Device</code> attribute marks a peripheral's battery rather than the machine's own. <a href="https://www.kernel.org/doc/html/latest/power/power_supply_class.html">kernel docs</a></span></span> node, nothing for an
+So there is no <button type="button" class="tgloss" popovertarget="g2" style="anchor-name:--g2"><code>hidpp</code></button><span popover id="g2" class="tgloss-b" style="position-anchor:--g2">Short for HID++, Logitech's request/response protocol carried inside two vendor-defined HID reports. Features are addressed by 16-bit id — <code>0x1001</code> is battery voltage — which you resolve to a runtime index by asking feature <code>0x0000</code> first. <a href="https://wiki.archlinux.org/title/Logitech_Unifying_Receiver">Arch Wiki</a></span> driver there, no <button type="button" class="tgloss" popovertarget="g3" style="anchor-name:--g3"><code>power_supply</code></button><span popover id="g3" class="tgloss-b" style="position-anchor:--g3">The kernel class every battery and charger registers with, surfacing as <code>/sys/class/power_supply/*</code>. The <code>scope=Device</code> attribute marks a peripheral's battery rather than the machine's own. <a href="https://www.kernel.org/doc/html/latest/power/power_supply_class.html">kernel docs</a></span> node, nothing for an
 applet to read. The receiver is claimed by `hid-generic`, which knows how to
 move a cursor and nothing else.
 
@@ -51,7 +52,7 @@ move a cursor and nothing else.
 
 Logitech devices speak HID++ — a small request/response protocol carried in
 two vendor-defined HID reports, `0x10` (7 bytes) and `0x11` (20 bytes). If
-the kernel won't do it for you, <span class="tgloss" tabindex="0"><code>hidraw</code><span class="tgloss-b">Raw access to a HID device's reports, bypassing any driver that claimed it: open <code>/dev/hidraw*</code>, write a report, read the reply. <a href="https://www.kernel.org/doc/html/latest/hid/hidraw.html">kernel docs</a></span></span> will. Write a request, read the
+the kernel won't do it for you, <button type="button" class="tgloss" popovertarget="g4" style="anchor-name:--g4"><code>hidraw</code></button><span popover id="g4" class="tgloss-b" style="position-anchor:--g4">Raw access to a HID device's reports, bypassing any driver that claimed it: open <code>/dev/hidraw*</code>, write a report, read the reply. <a href="https://www.kernel.org/doc/html/latest/hid/hidraw.html">kernel docs</a></span> will. Write a request, read the
 reply:
 
 ```python
@@ -80,7 +81,7 @@ times before giving up, and "no answer" genuinely means "off", not "asleep".
 ## The wall
 
 Now put that number on the laptop's screen. GNOME's power panel renders
-<span class="tgloss" tabindex="0">UPower<span class="tgloss-b">The freedesktop daemon that collects batteries — almost entirely from the kernel's <code>power_supply</code> class — and exports them on D-Bus. GNOME's power panel is a view of it, so anything it doesn't know about cannot be displayed. <a href="https://upower.freedesktop.org/">upower.freedesktop.org</a></span></span> devices, so I need UPower to have one.
+<button type="button" class="tgloss" popovertarget="g5" style="anchor-name:--g5">UPower</button><span popover id="g5" class="tgloss-b" style="position-anchor:--g5">The freedesktop daemon that collects batteries — almost entirely from the kernel's <code>power_supply</code> class — and exports them on D-Bus. GNOME's power panel is a view of it, so anything it doesn't know about cannot be displayed. <a href="https://upower.freedesktop.org/">upower.freedesktop.org</a></span> devices, so I need UPower to have one.
 
 UPower has no API for that. You can enumerate devices, you can subscribe to
 changes, and there is no `AddDevice` anywhere on the bus. Its Linux backend
@@ -93,7 +94,7 @@ fact; the daemon's job is to report hardware facts, not to accept claims
 about them. Which leaves exactly one way in: **the battery has to exist in
 the kernel.**
 
-I considered a <span class="tgloss" tabindex="0">DKMS<span class="tgloss-b">Dynamic Kernel Module Support: builds an out-of-tree kernel module automatically against every kernel you install, so it survives upgrades. <a href="https://wiki.archlinux.org/title/Dynamic_Kernel_Module_Support">Arch Wiki</a></span></span> module — thirty lines registering a `power_supply` with
+I considered a <button type="button" class="tgloss" popovertarget="g6" style="anchor-name:--g6">DKMS</button><span popover id="g6" class="tgloss-b" style="position-anchor:--g6">Dynamic Kernel Module Support: builds an out-of-tree kernel module automatically against every kernel you install, so it survives upgrades. <a href="https://wiki.archlinux.org/title/Dynamic_Kernel_Module_Support">Arch Wiki</a></span> module — thirty lines registering a `power_supply` with
 `scope=Device`, fed from userspace. It would work. But the mouse reports
 millivolts, so I'd have to invent the voltage-to-percentage curve myself,
 and I'd lose the automatic classification that makes UPower call a battery a
@@ -104,13 +105,13 @@ hardware, then be hardware.
 
 ## Become the mouse
 
-<span class="tgloss" tabindex="0"><code>/dev/uhid</code><span class="tgloss-b">Kernel interface that lets an ordinary userspace process create a HID device: you supply the report descriptor, the kernel binds a driver to it, and every request that driver makes arrives as an event for you to answer. <a href="https://www.kernel.org/doc/html/latest/hid/uhid.html">kernel docs</a></span></span> lets a userspace process create a HID device. You hand the
+<button type="button" class="tgloss" popovertarget="g7" style="anchor-name:--g7"><code>/dev/uhid</code></button><span popover id="g7" class="tgloss-b" style="position-anchor:--g7">Kernel interface that lets an ordinary userspace process create a HID device: you supply the report descriptor, the kernel binds a driver to it, and every request that driver makes arrives as an event for you to answer. <a href="https://www.kernel.org/doc/html/latest/hid/uhid.html">kernel docs</a></span> lets a userspace process create a HID device. You hand the
 kernel a report descriptor and some ids, and from that moment the kernel has
 a HID device it will happily bind a driver to. Everything the driver asks,
 your process answers.
 
-So the laptop grows a virtual Bluetooth-attached Logitech mouse. The daemon that runs it is <span class="tgloss" tabindex="0"><code>uhid-hidpp-battery</code><span class="tgloss-b">The client half of this project: 240 lines of Python that poll zxc-pc for a reading, create the virtual device, answer the driver's HID++ questions out of cache, and push an event when the charge changes. Standard library only.</span></span>.
-<span class="tgloss" tabindex="0"><code>hid-logitech-hidpp</code><span class="tgloss-b">The in-tree driver that speaks HID++ to Logitech devices and publishes what it finds — battery, high-resolution scrolling, onboard profiles. It also carries Logitech's voltage-to-percentage curve, which is why this project never has to invent one. <a href="https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/hid/hid-logitech-hidpp.c">source</a></span></span> binds to it, interrogates it over HID++ exactly as it
+So the laptop grows a virtual Bluetooth-attached Logitech mouse. The daemon that runs it is <button type="button" class="tgloss" popovertarget="g8" style="anchor-name:--g8"><code>uhid-hidpp-battery</code></button><span popover id="g8" class="tgloss-b" style="position-anchor:--g8">The client half of this project: 240 lines of Python that poll zxc-pc for a reading, create the virtual device, answer the driver's HID++ questions out of cache, and push an event when the charge changes. Standard library only.</span>.
+<button type="button" class="tgloss" popovertarget="g9" style="anchor-name:--g9"><code>hid-logitech-hidpp</code></button><span popover id="g9" class="tgloss-b" style="position-anchor:--g9">The in-tree driver that speaks HID++ to Logitech devices and publishes what it finds — battery, high-resolution scrolling, onboard profiles. It also carries Logitech's voltage-to-percentage curve, which is why this project never has to invent one. <a href="https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/drivers/hid/hid-logitech-hidpp.c">source</a></span> binds to it, interrogates it over HID++ exactly as it
 would a real one, and publishes what it learns:
 
 ![Sequence diagram. On the laptop, uhid-hidpp-battery polls zxc-pc over the tailnet; hidpp-battery-query asks the mouse for feature 0x1001 over hidraw and gets 4057 mV back. Only then does the daemon create the virtual device, which hid-logitech-hidpp interrogates for its name and battery, answering from cache, and publishes as hidpp_battery_N — which UPower shows as a mouse at 88%](/uploads/battery-over-wifi/sequence.svg)
