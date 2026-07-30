@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1e293b"/>
+      <stop offset="0.55" stop-color="#26264d"/>
+      <stop offset="1" stop-color="#312e81"/>
+    </linearGradient>
+    <linearGradient id="pipe" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f1f5f9"/>
+      <stop offset="0.5" stop-color="#cbd5e1"/>
+      <stop offset="1" stop-color="#94a3b8"/>
+    </linearGradient>
+    <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="14" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="softglow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="26"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <ellipse cx="600" cy="315" rx="250" ry="150" fill="#6366f1" opacity="0.18" filter="url(#softglow)"/>
+
+  <rect x="40" y="248" width="430" height="134" rx="67" fill="url(#pipe)"/>
+  <rect x="730" y="248" width="430" height="134" rx="67" fill="url(#pipe)"/>
+
+  <rect x="470" y="248" width="260" height="134" rx="67" fill="none" stroke="#818cf8" stroke-width="4" stroke-dasharray="16 14" opacity="0.75"/>
+
+  <g opacity="0.5">
+    <rect x="150" y="296" width="38" height="38" rx="8" fill="#475569"/>
+    <rect x="236" y="296" width="38" height="38" rx="8" fill="#475569"/>
+    <rect x="322" y="296" width="38" height="38" rx="8" fill="#475569"/>
+    <rect x="900" y="296" width="38" height="38" rx="8" fill="#475569"/>
+    <rect x="986" y="296" width="38" height="38" rx="8" fill="#475569"/>
+    <rect x="1072" y="296" width="38" height="38" rx="8" fill="#475569"/>
+  </g>
+
+  <g opacity="0.45" stroke="#c7d2fe" stroke-width="5" stroke-linecap="round">
+    <line x1="494" y1="270" x2="536" y2="270"/>
+    <line x1="486" y1="360" x2="522" y2="360"/>
+    <line x1="640" y1="266" x2="676" y2="266"/>
+    <line x1="654" y1="364" x2="700" y2="364"/>
+  </g>
+
+  <g filter="url(#glow)">
+    <rect x="516" y="292" width="46" height="46" rx="10" fill="#818cf8" transform="rotate(-8 539 315)"/>
+    <rect x="578" y="286" width="52" height="52" rx="11" fill="#e0e7ff" transform="rotate(6 604 312)"/>
+    <rect x="646" y="294" width="46" height="46" rx="10" fill="#fb7185" transform="rotate(-5 669 317)"/>
+  </g>
+
+  <g fill="#818cf8" opacity="0.85">
+    <circle cx="470" cy="315" r="9"/>
+    <circle cx="730" cy="315" r="9"/>
+  </g>
+</svg>

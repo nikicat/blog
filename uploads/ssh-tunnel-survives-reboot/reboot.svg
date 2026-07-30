@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 510" font-family="ui-sans-serif, system-ui, -apple-system, sans-serif" role="img" aria-label="Two time sequences compared across a reboot. Without a packet filter installed before networking, the first packet from the peer reaches a closed port, the kernel answers with a reset and the connection is destroyed. With the filter installed early, the packet is swallowed, the restore runs, the filter is removed and traffic resumes.">
+  <style>
+    .surface   { fill: #f8fafc; stroke: #e2e8f0; }
+    .node      { fill: #ffffff; stroke: #cbd5e1; }
+    .hdr       { fill: #334155; font-size: 13px; font-weight: 600; }
+    .label     { fill: #1e293b; font-size: 12px; }
+    .muted     { fill: #64748b; font-size: 11.5px; }
+    .life      { stroke: #cbd5e1; }
+    .flow      { stroke: #94a3b8; }
+    .accent    { stroke: #6366f1; }
+    .accenttxt { fill: #4338ca; font-size: 12px; font-weight: 600; }
+    .band      { fill: #f1f5f9; stroke: #e2e8f0; }
+    .hot       { stroke: #e11d48; }
+    .hottxt    { fill: #e11d48; font-size: 12px; font-weight: 600; }
+    .flowhead  { fill: #94a3b8; }
+    .accenthead{ fill: #6366f1; }
+    .hothead   { fill: #e11d48; }
+    @media (prefers-color-scheme: dark) {
+      .surface   { fill: #16202e; stroke: #2c3a4f; }
+      .node      { fill: #0b1220; stroke: #3b4a61; }
+      .hdr       { fill: #cbd5e1; }
+      .label     { fill: #e2e8f0; }
+      .muted     { fill: #8fa3bb; }
+      .life      { stroke: #3b4a61; }
+      .flow      { stroke: #64748b; }
+      .accent    { stroke: #818cf8; }
+      .accenttxt { fill: #c7d2fe; }
+      .band      { fill: #16202e; stroke: #2c3a4f; }
+      .hot       { stroke: #fb7185; }
+      .hottxt    { fill: #fb7185; }
+      .flowhead  { fill: #64748b; }
+      .accenthead{ fill: #818cf8; }
+      .hothead   { fill: #fb7185; }
+    }
+  </style>
+  <defs>
+    <marker id="rb-a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="flowhead"/>
+    </marker>
+    <marker id="rb-aa" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="accenthead"/>
+    </marker>
+    <marker id="rb-h" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="hothead"/>
+    </marker>
+  </defs>
+
+  <rect x="24" y="24" width="524" height="466" rx="14" class="surface"/>
+  <text x="48" y="52" class="hottxt">no filter — the default, and it loses</text>
+  <rect x="84" y="70" width="120" height="32" rx="8" class="node"/>
+  <text x="144" y="91" text-anchor="middle" class="hdr">client</text>
+  <rect x="374" y="70" width="120" height="32" rx="8" class="node"/>
+  <text x="434" y="91" text-anchor="middle" class="hdr">peer</text>
+  <line x1="144" y1="102" x2="144" y2="452" class="life" stroke-width="1.5" stroke-dasharray="3 5"/>
+  <line x1="434" y1="102" x2="434" y2="452" class="life" stroke-width="1.5"/>
+
+  <rect x="44" y="118" width="484" height="28" rx="8" class="band"/>
+  <text x="286" y="137" text-anchor="middle" class="muted">checkpoint on disk · machine powers off · boots again</text>
+
+  <line x1="44" y1="182" x2="528" y2="182" class="flow" stroke-width="1.2" stroke-dasharray="4 4"/>
+  <text x="48" y="176" class="muted">network comes up</text>
+
+  <line x1="428" y1="228" x2="150" y2="228" class="flow" stroke-width="1.5" marker-end="url(#rb-a)"/>
+  <text x="176" y="220" class="label">peer sends — a keepalive, a retransmit</text>
+
+  <line x1="150" y1="282" x2="428" y2="282" class="hot" stroke-width="2" marker-end="url(#rb-h)"/>
+  <text x="176" y="274" class="hottxt">RST — nothing is listening on that port</text>
+
+  <line x1="127" y1="325" x2="161" y2="359" class="hot" stroke-width="2.6"/>
+  <line x1="161" y1="325" x2="127" y2="359" class="hot" stroke-width="2.6"/>
+  <text x="182" y="348" class="hottxt">connection destroyed</text>
+
+  <text x="48" y="410" class="muted">the restore still runs, and still succeeds —</text>
+  <text x="48" y="430" class="muted">it just restores a socket the peer already tore down</text>
+  <text x="48" y="466" class="hottxt">✕ tunnel lost until someone with the key comes back</text>
+
+  <rect x="572" y="24" width="524" height="466" rx="14" class="surface"/>
+  <text x="596" y="52" class="accenttxt">filter first — the ordering that saves it</text>
+  <rect x="632" y="70" width="120" height="32" rx="8" class="node"/>
+  <text x="692" y="91" text-anchor="middle" class="hdr">client</text>
+  <rect x="922" y="70" width="120" height="32" rx="8" class="node"/>
+  <text x="982" y="91" text-anchor="middle" class="hdr">peer</text>
+  <line x1="692" y1="102" x2="692" y2="270" class="life" stroke-width="1.5" stroke-dasharray="3 5"/>
+  <line x1="692" y1="270" x2="692" y2="452" class="life" stroke-width="1.5"/>
+  <line x1="982" y1="102" x2="982" y2="452" class="life" stroke-width="1.5"/>
+
+  <rect x="592" y="118" width="484" height="28" rx="8" class="band"/>
+  <text x="834" y="137" text-anchor="middle" class="muted">checkpoint on disk · machine powers off · boots again</text>
+
+  <text x="596" y="172" class="accenttxt">drop rule installed before networking starts</text>
+  <line x1="592" y1="182" x2="1076" y2="182" class="accent" stroke-width="1.4" stroke-dasharray="4 4"/>
+  <text x="596" y="200" class="muted">network comes up</text>
+
+  <line x1="976" y1="228" x2="726" y2="228" class="flow" stroke-width="1.5" marker-end="url(#rb-a)"/>
+  <line x1="704" y1="219" x2="722" y2="237" class="hot" stroke-width="2"/>
+  <line x1="722" y1="219" x2="704" y2="237" class="hot" stroke-width="2"/>
+  <text x="740" y="220" class="label">swallowed — no reply, so no reset</text>
+
+  <line x1="596" y1="282" x2="686" y2="282" class="accent" stroke-width="1.8" marker-end="url(#rb-aa)"/>
+  <text x="596" y="274" class="accenttxt">restore: process and socket come back</text>
+
+  <line x1="596" y1="330" x2="686" y2="330" class="accent" stroke-width="1.8" marker-end="url(#rb-aa)"/>
+  <text x="596" y="322" class="accenttxt">drop rule removed — and only now</text>
+
+  <line x1="698" y1="380" x2="976" y2="380" class="flow" stroke-width="1.5" marker-end="url(#rb-a)" marker-start="url(#rb-a)"/>
+  <text x="724" y="372" class="label">the peer's next retransmit is answered</text>
+
+  <text x="596" y="430" class="muted">from the peer's side this was one slow round trip</text>
+  <text x="596" y="466" class="accenttxt">✓ tunnel alive, forwards carrying traffic</text>
+</svg>

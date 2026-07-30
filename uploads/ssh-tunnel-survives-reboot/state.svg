@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1120 380" font-family="ui-sans-serif, system-ui, -apple-system, sans-serif" role="img" aria-label="Where an SSH session's state lives: the ssh process memory holds the session keys and cipher state, the kernel socket holds sequence numbers and queues, and the peer holds its own untouchable copy.">
+  <style>
+    .surface   { fill: #f8fafc; stroke: #e2e8f0; }
+    .node      { fill: #ffffff; stroke: #cbd5e1; }
+    .title     { fill: #334155; font-size: 14px; font-weight: 600; }
+    .hdr       { fill: #334155; font-size: 13px; font-weight: 600; }
+    .label     { fill: #1e293b; font-size: 12.5px; }
+    .muted     { fill: #64748b; font-size: 12px; }
+    .flow      { stroke: #94a3b8; }
+    .accent    { stroke: #6366f1; }
+    .accenttxt { fill: #4338ca; font-size: 12.5px; font-weight: 600; }
+    .hottxt    { fill: #e11d48; font-size: 12.5px; font-weight: 600; }
+    .flowhead  { fill: #94a3b8; }
+    @media (prefers-color-scheme: dark) {
+      .surface   { fill: #16202e; stroke: #2c3a4f; }
+      .node      { fill: #0b1220; stroke: #3b4a61; }
+      .title     { fill: #cbd5e1; }
+      .hdr       { fill: #cbd5e1; }
+      .label     { fill: #e2e8f0; }
+      .muted     { fill: #8fa3bb; }
+      .flow      { stroke: #64748b; }
+      .accent    { stroke: #818cf8; }
+      .accenttxt { fill: #c7d2fe; }
+      .hottxt    { fill: #fb7185; }
+      .flowhead  { fill: #64748b; }
+    }
+  </style>
+  <defs>
+    <marker id="st-a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" class="flowhead"/>
+    </marker>
+  </defs>
+
+  <rect x="30" y="40" width="690" height="245" rx="14" class="surface"/>
+  <text x="54" y="66" class="title">client machine</text>
+
+  <rect x="58" y="84" width="300" height="180" rx="10" class="node"/>
+  <text x="78" y="110" class="hdr">ssh process — memory</text>
+  <text x="78" y="140" class="label">session keys, from the DH exchange</text>
+  <text x="78" y="166" class="label">cipher + MAC state, packet counters</text>
+  <text x="78" y="192" class="label">channel and port-forward bookkeeping</text>
+  <text x="78" y="228" class="muted">gone the moment the process exits</text>
+
+  <rect x="392" y="84" width="300" height="180" rx="10" class="node"/>
+  <text x="412" y="110" class="hdr">kernel — TCP socket</text>
+  <text x="412" y="140" class="label">sequence and acknowledgement numbers</text>
+  <text x="412" y="166" class="label">send and receive queues</text>
+  <text x="412" y="192" class="label">window, timestamps, negotiated options</text>
+  <text x="412" y="228" class="muted">reachable through TCP_REPAIR</text>
+
+  <line x1="722" y1="174" x2="828" y2="174" class="flow" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#st-a)" marker-start="url(#st-a)"/>
+  <text x="775" y="162" text-anchor="middle" class="muted">network</text>
+
+  <rect x="830" y="40" width="260" height="245" rx="14" class="surface"/>
+  <text x="854" y="66" class="title">peer machine</text>
+  <rect x="854" y="84" width="212" height="180" rx="10" class="node"/>
+  <text x="874" y="110" class="hdr">sshd — the far end</text>
+  <text x="874" y="140" class="label">its own copy of the</text>
+  <text x="874" y="162" class="label">same session keys</text>
+  <text x="874" y="192" class="label">its own TCP state</text>
+  <text x="874" y="228" class="hottxt">must never notice</text>
+
+  <path d="M 58 300 L 58 312 L 692 312 L 692 300" fill="none" class="accent" stroke-width="2"/>
+  <text x="375" y="338" text-anchor="middle" class="accenttxt">both halves can be written to disk and put back — this is the whole trick</text>
+</svg>
