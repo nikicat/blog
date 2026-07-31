@@ -223,6 +223,70 @@ retry.
 
 One `pkill` on the server later, the service came up and stayed up.
 
+## The landmine, part two
+
+For a week, it did. Then the laptop came back from an overnight suspend and
+the mouse stayed dead — until I restarted the client service, which is
+exactly the kind of ritual this setup was supposed to abolish. The journal
+said the client had done everything right: socat's keepalive declared the
+peer dead ten seconds after resume, the pipe exited, systemd started
+walking the restart ladder — and every attempt died on the same shrug as
+before:
+
+```
+sh[2584918]: error: error while expecting hello packet: Success
+```
+
+Same client symptom, different server story. This time nothing was holding
+the grab:
+
+```
+systemd[1]: zxc-mouse.socket: Too many incoming connections (1), dropping connection.
+```
+
+`MaxConnections=1` is up in the bullet list doing security work — "a second
+client gets refused instead of fighting over the grab". Correct, as far as
+it goes. But suspend doesn't send a FIN; the laptop just stops. The
+pre-suspend instance — one day and twenty-two hours old by then — was still
+holding its end of the connection, and its slot. Every reconnect from the
+freshly woken laptop was dropped by systemd on the zombie's behalf.
+
+It's the prototype's landmine again, one layer up. `netevent cat` never
+reads from its socket — it writes, and only when the mouse moves. So the
+zombie sat there until, three minutes into my debugging, a mouse-move write
+finally came back with a reset:
+
+```
+netevent[85178]: write failed: Connection reset by peer
+```
+
+Slot freed, next retry connected, mouse alive — fifteen seconds *before* I
+"fixed" it by restarting the client. The restart was a placebo. And had I
+not been wiggling the mouse at it, the zombie would have held the slot
+indefinitely: a process that can only learn its peer is dead by talking to
+it, with nothing to say.
+
+The embarrassing part: the fix was already in this article. The paragraph
+about the client's socat flags — a mouse stream is silent when the mouse is
+idle, so without keepalives a dead peer looks identical to a boring evening
+— is a diagnosis of exactly this failure. I wrote it about one end of the
+TCP connection and never thought about the other. The listening side takes
+the same three knobs, in systemd spelling, and accepted connections inherit
+them:
+
+```ini
+# zxc-mouse.socket, [Socket] — mirror of the client's socat keepalive
+KeepAlive=yes
+KeepAliveTimeSec=5
+KeepAliveIntervalSec=5
+KeepAliveProbes=2
+```
+
+Now the probes start going unanswered the moment the laptop sleeps, the
+instance is dead ~15 seconds later, and grab and slot are both free long
+before the laptop wakes. Which also finally makes the sequence diagram
+honest: it lists "suspend" as a disconnect, and now it is one.
+
 ## Was it worth it?
 
 Latency over the LAN (Tailscale negotiates a direct path between machines
