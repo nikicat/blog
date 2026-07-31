@@ -14,6 +14,12 @@ site.ignore("README.md", "scripts", "notes");
 const prefix = site.options.location.pathname.replace(/\/+$/, "");
 
 site.use(theme({
+  // Prism bundles only markup/css/clike/javascript. Without autoload a
+  // ```python fence still gets class="language-python" but no tokens at all,
+  // so highlighting silently does nothing. Token colors live in _data.yml
+  // (extra_head), not in a downloaded Prism theme: those are single-mode and
+  // this site has a manual light/dark toggle to follow.
+  prism: { autoloadLanguages: true },
   feed: {
     items: {
       image: "=image",

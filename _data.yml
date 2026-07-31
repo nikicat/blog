@@ -15,6 +15,41 @@ extra_head:
       .site-footer { text-align: center; margin: 3rem 0 1rem; }
       .site-footer a { font-size: 0.7rem; opacity: 0.2; color: inherit; text-decoration: none; }
       .site-footer a:hover, .site-footer a:focus-visible { opacity: 0.8; }
+
+      /* Syntax highlighting. Prism themes are single-mode, so these are the
+         house palette in both directions: light defaults, dark under the media
+         query for OS-dark readers, and dark again under [data-theme=dark] so
+         the manual toggle wins either way. */
+      :root {
+        --tok-comment: #64748b; --tok-keyword: #6d28d9; --tok-string: #0f766e;
+        --tok-number:  #b45309; --tok-func:    #2563eb; --tok-class:  #0369a1;
+        --tok-builtin: #0891b2; --tok-punct:   #64748b; --tok-deco:   #e11d48;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme=light]) {
+          --tok-comment: #8fa3bb; --tok-keyword: #c4b5fd; --tok-string: #5eead4;
+          --tok-number:  #fcd34d; --tok-func:    #93c5fd; --tok-class:  #7dd3fc;
+          --tok-builtin: #67e8f9; --tok-punct:   #94a3b8; --tok-deco:   #fb7185;
+        }
+      }
+      :root[data-theme=dark] {
+        --tok-comment: #8fa3bb; --tok-keyword: #c4b5fd; --tok-string: #5eead4;
+        --tok-number:  #fcd34d; --tok-func:    #93c5fd; --tok-class:  #7dd3fc;
+        --tok-builtin: #67e8f9; --tok-punct:   #94a3b8; --tok-deco:   #fb7185;
+      }
+      .token.comment, .token.prolog, .token.cdata, .token.doctype {
+        color: var(--tok-comment); font-style: italic; }
+      .token.keyword, .token.boolean, .token.atrule, .token.important, .token.selector {
+        color: var(--tok-keyword); }
+      .token.string, .token.char, .token.attr-value, .token.regex, .token.inserted, .token.triple-quoted-string {
+        color: var(--tok-string); }
+      .token.number, .token.constant, .token.symbol { color: var(--tok-number); }
+      .token.function, .token.attr-name { color: var(--tok-func); }
+      .token.class-name, .token.tag, .token.property { color: var(--tok-class); }
+      .token.builtin, .token.variable, .token.parameter { color: var(--tok-builtin); }
+      .token.punctuation, .token.operator { color: var(--tok-punct); }
+      .token.decorator, .token.annotation, .token.deleted { color: var(--tok-deco); }
+      .token.namespace { opacity: 0.7; }
     </style>
 
 # Metas plugin https://lume.land/plugins/metas/#description
