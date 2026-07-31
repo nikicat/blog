@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="sr-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#243047"/>
+      <stop offset="1" stop-color="#161f30"/>
+    </linearGradient>
+    <radialGradient id="sr-glow" cx="0.62" cy="0.5" r="0.55">
+      <stop offset="0" stop-color="#6366f1" stop-opacity="0.30"/>
+      <stop offset="1" stop-color="#6366f1" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#sr-bg)"/>
+  <ellipse cx="740" cy="315" rx="470" ry="300" fill="url(#sr-glow)"/>
+
+  <!-- left: one tangled thread, knotted back on itself -->
+  <g fill="none" stroke="#fb7185" stroke-width="26" stroke-linecap="round">
+    <path d="M120,150 C300,150 140,250 300,255 C450,260 160,330 300,345
+             C460,362 150,430 320,440 C420,446 300,500 150,490"/>
+  </g>
+
+  <!-- the same thread, combed straight: six parallel runs -->
+  <g stroke-width="26" stroke-linecap="round" fill="none">
+    <path d="M640,150 H1080" stroke="#818cf8"/>
+    <path d="M640,208 H1010" stroke="#818cf8" opacity="0.9"/>
+    <path d="M640,266 H1080" stroke="#34d399"/>
+    <path d="M640,324 H960"  stroke="#818cf8" opacity="0.9"/>
+    <path d="M640,382 H1080" stroke="#34d399"/>
+    <path d="M640,440 H1010" stroke="#818cf8" opacity="0.9"/>
+  </g>
+
+  <!-- the crossing point: tangle resolving into order -->
+  <path d="M330,320 C460,320 520,300 620,296" fill="none" stroke="#e2e8f0"
+        stroke-width="18" stroke-linecap="round" opacity="0.85"/>
+</svg>
