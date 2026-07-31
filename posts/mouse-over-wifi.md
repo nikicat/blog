@@ -287,6 +287,56 @@ instance is dead ~15 seconds later, and grab and slot are both free long
 before the laptop wakes. Which also finally makes the sequence diagram
 honest: it lists "suspend" as a disconnect, and now it is one.
 
+## The landmine, part three
+
+Then I rebooted zxc-pc. First reboot since the sockets went in — and the
+mouse was dead again, this time with the client logging `Connection
+refused`. Nothing was listening: the socket unit, the part whose whole job
+is to outlive everything, was `inactive (dead)`, with a boot-time epitaph:
+
+```
+systemd[1]: Dependency failed for Export Logitech mouse over Tailscale (netevent).
+systemd[1]: zxc-mouse.socket: Job zxc-mouse.socket/start failed with result 'dependency'.
+```
+
+`BindToDevice=tailscale0` is up in the bullet list doing security work too
+— and on a *virtual* interface it is also, quietly, an ordering statement:
+systemd translates it into "wait for the tailscale0 device unit". Follow
+the arrows. The socket waits for tailscale0; tailscale0 is created by
+tailscaled; tailscaled, an ordinary service, waits for `basic.target`;
+`basic.target` waits for `sockets.target`; `sockets.target` waits for the
+socket. A dependency cycle — threaded through a device unit, where
+systemd's cycle detection can't see it. What breaks it is the 90-second
+device-job timeout:
+
+```
+17:13:12 systemd[1]: Expecting device /sys/subsystem/net/devices/tailscale0...
+17:14:41 systemd[1]: Timed out waiting for device /sys/subsystem/net/devices/tailscale0.
+17:14:42 systemd-networkd[417]: tailscale0: Link UP
+```
+
+Ninety seconds of stalled boot, both sockets failed for good, and the
+interface up *one second later*. Nothing retries a failed socket. And the
+failure hides until the next reboot: `enable --now` at install time starts
+the socket on a system where tailscale0 already exists, so it works every
+time except the one that matters.
+
+The fix is to stop asking `sockets.target` for something it cannot give.
+The socket shouldn't start "at boot"; it should start *when tailscale0
+exists* — which systemd can express directly, and which is the same
+pattern `wpa_supplicant@.service` has used forever:
+
+```ini
+[Install]
+WantedBy=sys-subsystem-net-devices-tailscale0.device
+```
+
+No boot job to deadlock, no timeout to race: the sockets are pulled up by
+the interface appearing — at boot, after a tailscaled restart, whenever.
+Reboot test: tailscale0 up four seconds into boot, sockets listening, the
+client walked its backoff and reattached on its own. The 90-second stall
+went with it.
+
 ## Was it worth it?
 
 Latency over the LAN (Tailscale negotiates a direct path between machines
