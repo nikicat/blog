@@ -337,6 +337,58 @@ Reboot test: tailscale0 up four seconds into boot, sockets listening, the
 client walked its backoff and reattached on its own. The 90-second stall
 went with it.
 
+## The landmine, part four
+
+Another suspend, another resume — and this time the mouse did come back on
+its own. It just took two minutes, which is a strange amount of time: too
+long to be right, too short to be broken. The journal shows a system doing
+everything correctly, slowly:
+
+```
+12:06:15 systemd-sleep[2810263]: System returned from sleep operation 'suspend'.
+12:06:26 sh[2796395]: socat E read(5, ...): Connection timed out
+12:07:26 systemd[1]: zxc-mouse.service: Scheduled restart job, restart counter is at 10.
+```
+
+Eleven seconds to declare the peer dead — part two's keepalive, working.
+Then a full minute of nothing, and the reason is in the last line: *restart
+counter is at 10*. That's the client's own backoff — `RestartSec=2`,
+`RestartSteps=8`, `RestartMaxDelaySec=60`, praised back up the page as
+"walks the backoff (2 s → 60 s) until the server is back" — sitting at the
+top of its ladder.
+
+What I had never asked: when does that counter reset? Not on a successful
+connection. Not on a successful *hour* — the stream that died at 12:06 had
+been up for ninety minutes, and the counter still ticked from nine to ten.
+It resets on a manual start, and on nothing else. Every suspend since the
+unit was installed had deposited one restart, none of them ever expired,
+and by now every resume paid the full sixty-second maximum — or two of
+them, when the first attempt landed while WiFi was still associating and
+burned its minute on a failed connect. The backoff wasn't backing off from
+the last failure; it was backing off from the unit's entire biography.
+
+A backoff is a trade: slower recovery in exchange for not hammering
+something fragile. Here the fragile something is a TCP SYN over the tunnel
+every two seconds — roughly the load of a mouse click. The trade protects
+nothing and costs a minute per resume. So, deletion:
+
+```ini
+# zxc-mouse.service, [Service] — no ladder, just the two seconds
+RestartSec=2
+```
+
+— plus the one line the deletion makes mandatory: `StartLimitIntervalSec=0`
+in `[Unit]`. Flat two-second retries hit systemd's default start limit —
+five starts in ten seconds — within half a minute of zxc-pc being down,
+and a unit that trips the limit doesn't back off, it *fails*, permanently,
+until a human restarts it. Deleting the backoff without that line trades a
+one-minute landmine for a forever one. The battery unit next to it has
+carried that exact line from day one, above a comment explaining precisely
+this trap. I wrote the comment. I drew no conclusions from it.
+
+Now a resume costs eleven seconds of keepalive plus two of restart delay:
+the mouse is back before the monitors are.
+
 ## Was it worth it?
 
 Latency over the LAN (Tailscale negotiates a direct path between machines
